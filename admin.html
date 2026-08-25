@@ -106,6 +106,7 @@ async function abrirPainel(){
  loginBox.style.display="none";
  painel.style.display="block";
  await carregar();
+ await carregarConfirmadosSeparado();
 }
 
 document.getElementById("entrar").onclick=async()=>{
@@ -211,6 +212,42 @@ async function carregar(){
  }
 }
 
+
+async function carregarConfirmadosSeparado(){
+  confirmadosBox.innerHTML='<div class="vazio">Carregando confirmados...</div>';
+  const {data,error}=await db.rpc("admin_listar_confirmados");
+  if(error){
+    console.error("Erro confirmados:",error);
+    confirmadosBox.innerHTML='<div class="vazio">Erro ao carregar confirmados: '+esc(error.message || String(error))+'</div>';
+    return;
+  }
+  const lista=Array.isArray(data)?data:[];
+  confirmadosBox.innerHTML="";
+  if(lista.length===0){
+    confirmadosBox.innerHTML='<div class="vazio">Nenhum número confirmado.</div>';
+    return;
+  }
+  lista.sort((a,b)=>String(a.numero).localeCompare(String(b.numero)));
+  lista.forEach(r=>{
+    const div=document.createElement("div");
+    div.className="reserva";
+    div.innerHTML=`
+      <div><strong style="color:#198754">CONFIRMADO</strong></div>
+      <div class="numeros">${esc(r.numero)}</div>
+      <div class="dados">
+        <strong>Nome:</strong> ${esc(r.nome || "")}<br>
+        <strong>WhatsApp:</strong> ${esc(r.telefone || r.whatsapp || "")}<br>
+        <strong>CPF:</strong> ${esc(r.cpf || "")}<br>
+        <strong>Reservado em:</strong> ${esc(dataBR(r.reservado_em))}
+      </div>
+      <div class="acoes">
+        <button class="liberar">LIBERAR NÚMERO</button>
+      </div>`;
+    div.querySelector("button").onclick=()=>liberarConfirmado(r.numero);
+    confirmadosBox.appendChild(div);
+  });
+}
+
 async function liberarConfirmado(numero){
  if(!confirm(`Liberar o número confirmado ${numero}? Ele voltará a ficar disponível e os dados desta confirmação serão apagados.`)) return;
  msg.textContent="Liberando número confirmado...";
@@ -226,6 +263,7 @@ async function liberarConfirmado(numero){
    msg.textContent=`O número ${numero} não estava mais confirmado.`;
  }
  await carregar();
+ await carregarConfirmadosSeparado();
 }
 
 async function alterar(numero,acao,qtd){
