@@ -56,6 +56,9 @@ button{cursor:pointer;font-weight:bold}
 
 <div id="msg" class="msg"></div>
 <div id="reservas"></div>
+
+<h2 style="margin-top:28px">Confirmados</h2>
+<div id="confirmados"></div>
 </div>
 
 </div>
@@ -73,6 +76,7 @@ const painel=document.getElementById("painel");
 const loginMsg=document.getElementById("loginMsg");
 const msg=document.getElementById("msg");
 const reservasBox=document.getElementById("reservas");
+const confirmadosBox=document.getElementById("confirmados");
 
 function esc(v){
  return String(v??"")
@@ -172,6 +176,52 @@ async function carregar(){
    lib.onclick=()=>alterar(r.numeros[0],"liberar",r.numeros.length);
    reservasBox.appendChild(div);
  });
+
+ // Área de números já confirmados
+ const confirmados=todos
+   .filter(x=>x.status==="confirmado" || x.status==="pago")
+   .sort((a,b)=>String(a.numero).localeCompare(String(b.numero)));
+
+ confirmadosBox.innerHTML="";
+ if(confirmados.length===0){
+   confirmadosBox.innerHTML='<div class="vazio">Nenhum número confirmado.</div>';
+ } else {
+   confirmados.forEach(r=>{
+     const div=document.createElement("div");
+     div.className="reserva";
+     div.innerHTML=`
+       <div><strong style="color:#198754">CONFIRMADO</strong></div>
+       <div class="numeros">${esc(r.numero)}</div>
+       <div class="dados">
+         <strong>Nome:</strong> ${esc(r.nome)}<br>
+         <strong>WhatsApp:</strong> ${esc(r.telefone)}<br>
+         <strong>CPF:</strong> ${esc(r.cpf)}<br>
+         <strong>Reserva original:</strong> ${esc(dataBR(r.reservado_em))}
+       </div>
+       <div class="acoes">
+         <button class="liberar">LIBERAR NÚMERO</button>
+       </div>`;
+     div.querySelector("button").onclick=()=>liberarConfirmado(r.numero);
+     confirmadosBox.appendChild(div);
+   });
+ }
+}
+
+async function liberarConfirmado(numero){
+ if(!confirm(`Liberar o número confirmado ${numero}? Ele voltará a ficar disponível e os dados desta confirmação serão apagados.`)) return;
+ msg.textContent="Liberando número confirmado...";
+ const {data,error}=await db.rpc("admin_liberar_confirmado",{p_numero:numero});
+ if(error){
+   console.error(error);
+   msg.textContent="Erro ao liberar o número confirmado.";
+   return;
+ }
+ if(data===true){
+   msg.textContent=`Número ${numero} liberado com sucesso.`;
+ } else {
+   msg.textContent=`O número ${numero} não estava mais confirmado.`;
+ }
+ await carregar();
 }
 
 async function alterar(numero,acao,qtd){
