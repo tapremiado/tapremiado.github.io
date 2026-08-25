@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel Administrativo - F-1000</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f5f7;color:#222}
+.wrap{max-width:1100px;margin:auto;padding:18px}
+h1{text-align:center;margin:6px 0 18px}
+.card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px;margin-bottom:14px}
+.login{max-width:430px;margin:50px auto}
+input,button{width:100%;padding:12px;border-radius:8px;border:1px solid #bbb;font-size:15px;margin-top:8px}
+button{cursor:pointer;font-weight:bold}
+.entrar{background:#111;color:#fff;border:0}
+.topo{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.sair{width:auto;background:#eee}
+.contadores{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.contador{text-align:center;background:#fff;border:1px solid #ddd;border-radius:10px;padding:12px}
+.contador strong{display:block;font-size:25px;margin-top:5px}
+.reserva{background:#fff;border:1px solid #ddd;border-radius:12px;padding:14px;margin-bottom:12px}
+.numeros{font-size:20px;font-weight:bold;margin:8px 0}
+.dados{line-height:1.6}
+.acoes{display:flex;gap:8px;margin-top:12px}
+.acoes button{margin:0}
+.confirmar{background:#198754;color:#fff;border:0}
+.liberar{background:#dc3545;color:#fff;border:0}
+.msg{text-align:center;font-weight:bold;margin:12px 0}
+.vazio{text-align:center;padding:25px;background:#fff;border-radius:12px}
+@media(max-width:650px){.contadores{grid-template-columns:1fr}.acoes{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="loginBox" class="card login">
+<h1>Painel Administrativo</h1>
+<input id="email" type="email" placeholder="E-mail">
+<input id="senha" type="password" placeholder="Senha">
+<button id="entrar" class="entrar">ENTRAR</button>
+<div id="loginMsg" class="msg"></div>
+</div>
+
+<div id="painel" style="display:none">
+<div class="topo">
+<h1>Painel F-1000</h1>
+<button id="sair" class="sair">Sair</button>
+</div>
+
+<div class="contadores">
+<div class="contador">Disponíveis<strong id="cDisponiveis">0</strong></div>
+<div class="contador">Reservados<strong id="cReservados">0</strong></div>
+<div class="contador">Confirmados<strong id="cConfirmados">0</strong></div>
+</div>
+
+<div id="msg" class="msg"></div>
+<div id="reservas"></div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const {createClient}=supabase;
+const db=createClient(
+  "https://sjvzuoflqfyfbnyravmy.supabase.co",
+  "sb_publishable_GgzTsAlQtOLRYiBKItXSCA_QBIEA8TW"
+);
+
+const loginBox=document.getElementById("loginBox");
+const painel=document.getElementById("painel");
+const loginMsg=document.getElementById("loginMsg");
+const msg=document.getElementById("msg");
+const reservasBox=document.getElementById("reservas");
+
+function esc(v){
+ return String(v??"")
+   .replaceAll("&","&amp;").replaceAll("<","&lt;")
+   .replaceAll(">","&gt;").replaceAll('"',"&quot;");
+}
+
+function dataBR(v){
+ if(!v)return "";
+ return new Date(v).toLocaleString("pt-BR");
+}
+
+async function verificarAdmin(){
+ const {data,error}=await db.rpc("eh_admin");
+ return !error && data===true;
+}
+
+async function abrirPainel(){
+ const admin=await verificarAdmin();
+ if(!admin){
+   await db.auth.signOut();
+   loginMsg.textContent="Usuário sem permissão administrativa.";
+   loginBox.style.display="block";
+   painel.style.display="none";
+   return;
+ }
+ loginBox.style.display="none";
+ painel.style.display="block";
+ await carregar();
+}
+
+document.getElementById("entrar").onclick=async()=>{
+ const email=document.getElementById("email").value.trim();
+ const password=document.getElementById("senha").value;
+ loginMsg.textContent="Entrando...";
+ const {error}=await db.auth.signInWithPassword({email,password});
+ if(error){loginMsg.textContent="E-mail ou senha incorretos.";return}
+ loginMsg.textContent="";
+ await abrirPainel();
+};
+
+document.getElementById("sair").onclick=async()=>{
+ await db.auth.signOut();
+ painel.style.display="none";
+ loginBox.style.display="block";
+ document.getElementById("senha").value="";
+};
+
+async function carregar(){
+ msg.textContent="Carregando...";
+ const {data,error}=await db.rpc("admin_listar_reservas");
+ if(error){msg.textContent="Não foi possível carregar o painel.";return}
+
+ const todos=data||[];
+ document.getElementById("cDisponiveis").textContent=todos.filter(x=>x.status==="disponivel").length;
+ document.getElementById("cReservados").textContent=todos.filter(x=>x.status==="reservado").length;
+ document.getElementById("cConfirmados").textContent=todos.filter(x=>x.status==="confirmado"||x.status==="pago").length;
+
+ const reservados=todos.filter(x=>x.status==="reservado");
+ const grupos=new Map();
+
+ reservados.forEach(x=>{
+   const chave=[x.nome,x.telefone,x.cpf,x.reservado_em].join("|");
+   if(!grupos.has(chave)) grupos.set(chave,{...x,numeros:[]});
+   grupos.get(chave).numeros.push(x.numero);
+ });
+
+ reservasBox.innerHTML="";
+ msg.textContent="";
+
+ if(grupos.size===0){
+   reservasBox.innerHTML='<div class="vazio">Nenhuma reserva aguardando confirmação.</div>';
+   return;
+ }
+
+ [...grupos.values()]
+ .sort((a,b)=>new Date(b.reservado_em)-new Date(a.reservado_em))
+ .forEach(r=>{
+   r.numeros.sort();
+   const div=document.createElement("div");
+   div.className="reserva";
+   div.innerHTML=`
+     <div><strong>RESERVADO</strong></div>
+     <div class="numeros">${r.numeros.map(esc).join(", ")}</div>
+     <div class="dados">
+       <strong>Nome:</strong> ${esc(r.nome)}<br>
+       <strong>WhatsApp:</strong> ${esc(r.telefone)}<br>
+       <strong>CPF:</strong> ${esc(r.cpf)}<br>
+       <strong>Reservado em:</strong> ${esc(dataBR(r.reservado_em))}
+     </div>
+     <div class="acoes">
+       <button class="confirmar">CONFIRMAR TODOS (${r.numeros.length})</button>
+       <button class="liberar">LIBERAR TODOS (${r.numeros.length})</button>
+     </div>`;
+   const [conf,lib]=div.querySelectorAll("button");
+   conf.onclick=()=>alterar(r.numeros[0],"confirmar",r.numeros.length);
+   lib.onclick=()=>alterar(r.numeros[0],"liberar",r.numeros.length);
+   reservasBox.appendChild(div);
+ });
+}
+
+async function alterar(numero,acao,qtd){
+ const texto=acao==="confirmar"
+   ? `Confirmar ${qtd} número(s) desta reserva?`
+   : `Liberar ${qtd} número(s) desta reserva?`;
+ if(!confirm(texto))return;
+
+ msg.textContent=acao==="confirmar"?"Confirmando...":"Liberando...";
+ const {data,error}=await db.rpc("admin_alterar_reserva",{
+   p_numero_referencia:numero,
+   p_acao:acao
+ });
+ if(error){msg.textContent="Erro ao realizar a operação.";return}
+ msg.textContent=`Operação concluída em ${data} número(s).`;
+ await carregar();
+}
+
+(async()=>{
+ const {data:{session}}=await db.auth.getSession();
+ if(session) await abrirPainel();
+})();
+</script>
+</body>
+</html>
