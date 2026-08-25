@@ -177,14 +177,10 @@ async function carregar(){
    reservasBox.appendChild(div);
  });
 
- // Área de números já confirmados
- const {data:confirmadosData,error:confirmadosErro}=await db
-   .from("numeros")
-   .select("numero,status,nome,telefone,cpf,reservado_em")
-   .in("status",["confirmado","pago"])
-   .order("numero");
-
+ // Área de números já confirmados - consulta administrativa protegida
+ const {data:confirmadosData,error:confirmadosErro}=await db.rpc("admin_listar_confirmados");
  const confirmados=(confirmadosData||[]);
+
  confirmadosBox.innerHTML="";
  if(confirmadosErro){
    console.error(confirmadosErro);
