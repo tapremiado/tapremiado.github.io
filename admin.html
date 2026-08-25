@@ -178,11 +178,19 @@ async function carregar(){
  });
 
  // Área de números já confirmados
- const confirmados=todos
-   .filter(x=>x.status==="confirmado" || x.status==="pago")
-   .sort((a,b)=>String(a.numero).localeCompare(String(b.numero)));
+ const {data:confirmadosData,error:confirmadosErro}=await db
+   .from("numeros")
+   .select("numero,status,nome,telefone,cpf,reservado_em")
+   .in("status",["confirmado","pago"])
+   .order("numero");
 
+ const confirmados=(confirmadosData||[]);
  confirmadosBox.innerHTML="";
+ if(confirmadosErro){
+   console.error(confirmadosErro);
+   confirmadosBox.innerHTML='<div class="vazio">Não foi possível carregar os confirmados.</div>';
+   return;
+ }
  if(confirmados.length===0){
    confirmadosBox.innerHTML='<div class="vazio">Nenhum número confirmado.</div>';
  } else {
