@@ -163,7 +163,7 @@ async function carregar(){
      <div class="numeros">${r.numeros.map(esc).join(", ")}</div>
      <div class="dados">
        <strong>Nome:</strong> ${esc(r.nome)}<br>
-       <strong>WhatsApp:</strong> ${esc(r.telefone)}<br>
+       <strong>WhatsApp:</strong> ${esc(r.telefone || r.whatsapp || "")}<br>
        <strong>CPF:</strong> ${esc(r.cpf)}<br>
        <strong>Reservado em:</strong> ${esc(dataBR(r.reservado_em))}
      </div>
@@ -184,7 +184,7 @@ async function carregar(){
  confirmadosBox.innerHTML="";
  if(confirmadosErro){
    console.error(confirmadosErro);
-   confirmadosBox.innerHTML='<div class="vazio">Não foi possível carregar os confirmados.</div>';
+   confirmadosBox.innerHTML='<div class="vazio">Não foi possível carregar os confirmados: '+esc(confirmadosErro.message || confirmadosErro)+'</div>';
    return;
  }
  if(confirmados.length===0){
@@ -198,7 +198,7 @@ async function carregar(){
        <div class="numeros">${esc(r.numero)}</div>
        <div class="dados">
          <strong>Nome:</strong> ${esc(r.nome)}<br>
-         <strong>WhatsApp:</strong> ${esc(r.telefone)}<br>
+         <strong>WhatsApp:</strong> ${esc(r.telefone || r.whatsapp || "")}<br>
          <strong>CPF:</strong> ${esc(r.cpf)}<br>
          <strong>Reserva original:</strong> ${esc(dataBR(r.reservado_em))}
        </div>
