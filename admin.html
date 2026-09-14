@@ -294,6 +294,7 @@ function gerarComprovante(r){
     : "Não informada";
 
   const valor = "R$ 100,00";
+  const linkVerificacao = "https://tapremiado.github.io/verificar.html?codigo=" + encodeURIComponent(codigo);
 
   const w = window.open("", "_blank", "width=800,height=900");
 
@@ -408,6 +409,16 @@ function gerarComprovante(r){
         Código único de autenticidade
         <strong>${codigo}</strong>
       </div>
+      <div style="text-align:center; margin:14px 0;">
+  <img
+    src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(linkVerificacao)}"
+    alt="QR Code de verificação"
+    style="width:140px; height:140px;"
+  >
+  <div style="font-size:12px; margin-top:6px;">
+    Escaneie para verificar a autenticidade
+  </div>
+</div>
       <div style="text-align:center; margin:14px 0; font-size:14px;">
   Verifique a autenticidade deste comprovante em:<br>
   <strong>tapremiado.github.io/verificar.html</strong>
