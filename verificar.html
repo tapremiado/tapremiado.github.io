@@ -169,6 +169,14 @@ async function verificar(){
     "<p><strong>Código:</strong> "+esc(codigo)+"</p>" +
     "<p>Dados conferidos diretamente no registro oficial do sistema Tá Premiado.</p>";
 }
+  const params = new URLSearchParams(window.location.search);
+const codigoUrl = params.get("codigo");
+
+if(codigoUrl){
+  document.getElementById("codigo").value = codigoUrl.toUpperCase();
+  verificar();
+
+}
 </script>
 
 </body>
