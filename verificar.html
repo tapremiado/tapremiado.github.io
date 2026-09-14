@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verificar Comprovante - Tá Premiado</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f4f5f7;
+  color:#222;
+}
+.caixa{
+  max-width:600px;
+  margin:70px auto;
+  background:#fff;
+  padding:30px;
+  border-radius:14px;
+  box-shadow:0 3px 15px #0002;
+  text-align:center;
+}
+h1{margin-top:0}
+.subtitulo{color:#555;margin-bottom:25px}
+input{
+  width:100%;
+  padding:15px;
+  font-size:17px;
+  text-align:center;
+  text-transform:uppercase;
+  border:1px solid #bbb;
+  border-radius:8px;
+}
+button{
+  width:100%;
+  margin-top:12px;
+  padding:15px;
+  border:0;
+  border-radius:8px;
+  background:#198754;
+  color:white;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+}
+.resultado{
+  margin-top:25px;
+  padding:20px;
+  border-radius:10px;
+  display:none;
+}
+.valido{
+  background:#e8f7ee;
+  border:2px solid #198754;
+}
+.invalido{
+  background:#fdecec;
+  border:2px solid #dc3545;
+}
+.numero{
+  font-size:32px;
+  font-weight:bold;
+  margin:15px 0;
+}
+</style>
+</head>
+
+<body>
+
+<div class="caixa">
+  <h1>Verificar Comprovante</h1>
+
+  <div class="subtitulo">
+    Consulte a autenticidade do seu comprovante de participação.
+  </div>
+
+  <input
+    id="codigo"
+    placeholder="Digite o código de autenticidade"
+    autocomplete="off"
+  >
+
+  <button onclick="verificar()">VERIFICAR COMPROVANTE</button>
+
+  <div id="resultado" class="resultado"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const { createClient } = supabase;
+
+const db = createClient(
+  "https://sjvzuoflqfyfbnyravmy.supabase.co",
+  "sb_publishable_GgzTsAlQtOLRYiBKItXSCA_QBIEA8TW",
+  {
+    auth:{
+      persistSession:false,
+      autoRefreshToken:false,
+      detectSessionInUrl:false
+    }
+  }
+);
+
+function esc(v){
+  return String(v ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;");
+}
+
+function dataBR(v){
+  if(!v) return "";
+  return new Date(v).toLocaleString("pt-BR");
+}
+
+async function verificar(){
+
+  const codigo = document
+    .getElementById("codigo")
+    .value
+    .trim()
+    .toUpperCase();
+
+  const resultado = document.getElementById("resultado");
+
+  if(!codigo){
+    resultado.style.display="block";
+    resultado.className="resultado invalido";
+    resultado.innerHTML="<strong>Digite o código do comprovante.</strong>";
+    return;
+  }
+
+  resultado.style.display="block";
+  resultado.className="resultado";
+  resultado.innerHTML="Verificando...";
+
+  const {data,error} = await db.rpc(
+    "verificar_comprovante",
+    {p_codigo:codigo}
+  );
+
+  if(error){
+    resultado.className="resultado invalido";
+    resultado.innerHTML="<strong>Não foi possível realizar a consulta.</strong>";
+    return;
+  }
+
+  if(!data || data.length===0){
+    resultado.className="resultado invalido";
+    resultado.innerHTML=
+      "<h2>COMPROVANTE NÃO ENCONTRADO</h2>" +
+      "<p>O código informado não corresponde a um comprovante válido no sistema.</p>";
+    return;
+  }
+
+  const r=data[0];
+
+  resultado.className="resultado valido";
+
+  resultado.innerHTML=
+    "<h2>✓ COMPROVANTE AUTÊNTICO</h2>" +
+    "<div class='numero'>NÚMERO "+esc(r.numero)+"</div>" +
+    "<p><strong>Participante:</strong> "+esc(r.nome)+"</p>" +
+    "<p><strong>Status:</strong> PAGAMENTO CONFIRMADO</p>" +
+    "<p><strong>Confirmado em:</strong> "+esc(dataBR(r.confirmado_em))+"</p>" +
+    "<p><strong>Código:</strong> "+esc(codigo)+"</p>" +
+    "<p>Dados conferidos diretamente no registro oficial do sistema Tá Premiado.</p>";
+}
+</script>
+
+</body>
+</html>
