@@ -241,9 +241,11 @@ async function carregarConfirmadosSeparado(){
         <strong>Reservado em:</strong> ${esc(dataBR(r.reservado_em))}
       </div>
       <div class="acoes">
+      <button class="comprovante">GERAR COMPROVANTE</button>
         <button class="liberar">LIBERAR NÚMERO</button>
       </div>`;
-    div.querySelector("button").onclick=()=>liberarConfirmado(r.numero);
+    div.querySelector(".liberar").onclick=()=>liberarConfirmado(r.numero);
+    div.querySelector(".comprovante").onclick=()=>gerarComprovante(r);
     confirmadosBox.appendChild(div);
   });
 }
@@ -281,7 +283,149 @@ async function alterar(numero,acao,qtd){
  msg.textContent=`Operação concluída em ${data} número(s).`;
  await carregar();
 }
+function gerarComprovante(r){
+  const nome = r.nome || "";
+  const numero = r.numero || "";
+  const whatsapp = r.telefone || r.whatsapp || "";
+  const cpf = r.cpf || "";
+  const codigo = r.codigo_comprovante || "Código não disponível";
+  const dataConfirmacao = r.confirmado_em
+    ? new Date(r.confirmado_em).toLocaleString("pt-BR")
+    : "Não informada";
 
+  const valor = "R$ 100,00";
+
+  const w = window.open("", "_blank", "width=800,height=900");
+
+  w.document.write(`
+  <!DOCTYPE html>
+  <html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <title>Comprovante Tá Premiado</title>
+    <style>
+      body{
+        font-family:Arial,sans-serif;
+        background:#f4f4f4;
+        padding:30px;
+        color:#222;
+      }
+      .comprovante{
+        max-width:650px;
+        margin:auto;
+        background:#fff;
+        border:2px solid #111;
+        border-radius:16px;
+        padding:28px;
+      }
+      h1{
+        text-align:center;
+        margin:0;
+        font-size:32px;
+      }
+      h2{
+        text-align:center;
+        margin:8px 0 25px;
+        font-size:18px;
+      }
+      .status{
+        background:#198754;
+        color:white;
+        text-align:center;
+        font-weight:bold;
+        padding:12px;
+        border-radius:8px;
+        margin-bottom:24px;
+      }
+      .linha{
+        padding:9px 0;
+        border-bottom:1px solid #ddd;
+        font-size:17px;
+      }
+      .numero{
+        text-align:center;
+        font-size:38px;
+        font-weight:bold;
+        margin:20px 0;
+      }
+      .codigo{
+        margin-top:25px;
+        background:#f3f3f3;
+        padding:16px;
+        border-radius:8px;
+        text-align:center;
+      }
+      .codigo strong{
+        display:block;
+        font-size:22px;
+        margin-top:8px;
+      }
+      .aviso{
+        margin-top:22px;
+        font-size:13px;
+        text-align:center;
+        line-height:1.5;
+      }
+      .imprimir{
+        display:block;
+        width:100%;
+        margin-top:25px;
+        padding:13px;
+        border:0;
+        border-radius:8px;
+        background:#111;
+        color:#fff;
+        font-size:16px;
+        font-weight:bold;
+        cursor:pointer;
+      }
+      @media print{
+        body{background:#fff;padding:0}
+        .comprovante{border:0}
+        .imprimir{display:none}
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="comprovante">
+
+      <h1>TÁ PREMIADO</h1>
+      <h2>COMPROVANTE DE PARTICIPAÇÃO</h2>
+
+      <div class="status">PAGAMENTO CONFIRMADO</div>
+
+      <div class="linha"><strong>Participante:</strong> ${nome}</div>
+      <div class="linha"><strong>CPF:</strong> ${cpf}</div>
+      <div class="linha"><strong>WhatsApp:</strong> ${whatsapp}</div>
+
+      <div class="numero">NÚMERO ${numero}</div>
+
+      <div class="linha"><strong>Valor:</strong> ${valor}</div>
+      <div class="linha"><strong>Confirmado em:</strong> ${dataConfirmacao}</div>
+
+      <div class="codigo">
+        Código único de autenticidade
+        <strong>${codigo}</strong>
+      </div>
+
+      <div class="aviso">
+        Este comprovante somente será considerado autêntntico quando
+        os dados e o código acima coincidirem com o registro oficial
+        do sistema <strong>Tá Premiado</strong>.
+      </div>
+
+      <button class="imprimir" onclick="window.print()">
+        IMPRIMIR / SALVAR EM PDF
+      </button>
+
+    </div>
+  </body>
+  </html>
+  `);
+
+  w.document.close();
+}
 (async()=>{
  const {data:{session}}=await db.auth.getSession();
  if(session) await abrirPainel();
