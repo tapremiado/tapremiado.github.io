@@ -72,6 +72,9 @@ button{cursor:pointer;font-weight:bold}
   <div id="grupoFinalizado" style="display:none">
     <p><strong>Número contemplado:</strong> <span id="grupoNumeroContemplado"></span></p>
     <p><strong>Data da apuração:</strong> <span id="grupoDataApuracao"></span></p>
+    <button id="btnNovoPremio" style="background:#2563eb;color:#fff;border:0">
+  NOVO PRÊMIO
+</button>
   </div>
 </div>
   <h2 style="margin-top:28px">Confirmados</h2>
@@ -532,6 +535,13 @@ function gerarComprovante(r){
   await carregarGrupo();
 await carregarConfirmadosSeparado();
   };
+  document.getElementById("btnNovoPremio").onclick = async function(){
+  if(!confirm("Deseja iniciar um novo prêmio? O Grupo 001 atual continuará finalizado no histórico.")){
+    return;
+  }
+
+  alert("Vamos preparar o novo prêmio.");
+};
 </script>
 </body>
 </html>
