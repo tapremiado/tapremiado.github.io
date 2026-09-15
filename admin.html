@@ -57,7 +57,24 @@ button{cursor:pointer;font-weight:bold}
 <div id="msg" class="msg"></div>
 <div id="reservas"></div>
 
-<h2 style="margin-top:28px">Confirmados</h2>
+<div class="card" id="controleGrupo" style="margin-top:20px">
+  <h2>Controle do Grupo 001</h2>
+  <p><strong>Prêmio:</strong> <span id="grupoPremio">Carregando...</span></p>
+  <p><strong>Status:</strong> <span id="grupoStatus">Carregando...</span></p>
+
+  <div id="grupoEmAndamento">
+    <input id="numeroContemplado" type="text" maxlength="3" placeholder="Número contemplado (001 a 999)">
+    <button id="btnFinalizarGrupo" style="background:#198754;color:#fff;border:0">
+      FINALIZAR GRUPO
+    </button>
+  </div>
+
+  <div id="grupoFinalizado" style="display:none">
+    <p><strong>Número contemplado:</strong> <span id="grupoNumeroContemplado"></span></p>
+    <p><strong>Data da apuração:</strong> <span id="grupoDataApuracao"></span></p>
+  </div>
+</div>
+  <h2 style="margin-top:28px">Confirmados</h2>
 <div id="confirmados"></div>
 </div>
 
@@ -211,6 +228,8 @@ async function carregar(){
    });
  }
 }
+
+  carregarGrupo();
 
 
 async function carregarConfirmadosSeparado(){
@@ -445,6 +464,73 @@ function gerarComprovante(r){
  const {data:{session}}=await db.auth.getSession();
  if(session) await abrirPainel();
 })();
+
+  async function carregarGrupo(){
+  const {data,error}=await db.rpc("admin_consultar_grupo",{p_codigo:"001"});
+
+  if(error){
+    console.error("Erro ao carregar grupo:",error);
+    document.getElementById("grupoPremio").textContent="Erro ao carregar";
+    document.getElementById("grupoStatus").textContent="Erro ao carregar";
+    return;
+  }
+
+  const g=Array.isArray(data) ? data[0] : data;
+
+  if(!g){
+    document.getElementById("grupoPremio").textContent="Grupo não encontrado";
+    document.getElementById("grupoStatus").textContent="Grupo não encontrado";
+    return;
+  }
+
+  document.getElementById("grupoPremio").textContent=g.premio || "-";
+
+  if(g.status==="finalizado"){
+    document.getElementById("grupoStatus").textContent="FINALIZADO";
+
+    document.getElementById("grupoEmAndamento").style.display="none";
+    document.getElementById("grupoFinalizado").style.display="block";
+
+    document.getElementById("grupoNumeroContemplado").textContent=
+      g.numero_contemplado || "-";
+
+    document.getElementById("grupoDataApuracao").textContent=
+      g.data_apuracao
+        ? new Date(g.data_apuracao).toLocaleString("pt-BR")
+        : "-";
+  }else{
+    document.getElementById("grupoStatus").textContent="EM ANDAMENTO";
+
+    document.getElementById("grupoEmAndamento").style.display="block";
+    document.getElementById("grupoFinalizado").style.display="none";
+  }
+}
+
+  document.getElementById("btnFinalizarGrupo").onclick = async function(){
+  const numero = document.getElementById("numeroContemplado").value.trim();
+
+  if(!numero){
+    alert("Digite o número contemplado.");
+    return;
+  }
+
+  if(!confirm("Confirma a finalização do Grupo 001 com o número " + numero + "?")){
+    return;
+  }
+
+  const {error}=await db.rpc("admin_finalizar_grupo",{
+    p_codigo:"001",
+    p_numero:numero
+  });
+
+  if(error){
+    alert("Não foi possível finalizar o grupo: " + error.message);
+    return;
+  }
+
+  alert("Grupo 001 finalizado com sucesso!");
+  await carregarGrupo();
+};
 </script>
 </body>
 </html>
