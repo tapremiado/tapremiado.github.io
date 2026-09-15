@@ -93,6 +93,9 @@ input,button{padding:12px;border-radius:8px;border:1px solid #bbb;font-size:15px
 <div class="premio">Prêmio: 1 Renault Kwid</div>
 <div class="premio">Valor de referência do prêmio: R$ 50.000,00</div>
 <div class="preco">R$ 100,00 por número</div>
+  <div id="statusGrupoPublico" style="text-align:center;margin:12px 0;padding:12px;border-radius:10px;background:#fff3cd;font-weight:bold;">
+  Carregando situação do Grupo 001...
+</div>
 <div class="legend">
 <span><i class="dot" style="background:#fff"></i>Disponível</span>
 <span><i class="dot" style="background:#ffd966"></i>Reservado</span>
@@ -203,9 +206,41 @@ botao.onclick=async()=>{
    escolhidos.clear(); atualizarResumo(); await carregar();
  }
 }
+async function carregarGrupoPublico(){
+  const box = document.getElementById("statusGrupoPublico");
+
+  const {data,error} = await db.rpc("consultar_grupo_publico",{
+    p_codigo:"001"
+  });
+
+  if(error){
+    console.error(error);
+    box.textContent = "Grupo 001";
+    return;
+  }
+
+  const g = Array.isArray(data) ? data[0] : data;
+
+  if(!g){
+    box.textContent = "Grupo 001";
+    return;
+  }
+
+  if(g.status === "finalizado"){
+    box.style.background = "#d1e7dd";
+    box.innerHTML =
+      "🏆 GRUPO 001 FINALIZADO<br>" +
+      "Número contemplado: " + g.numero_contemplado;
+  }else{
+    box.style.background = "#fff3cd";
+    box.innerHTML = "🟡 GRUPO 001 EM ANDAMENTO";
+  }
+}
+    
 
 atualizarResumo();
 carregar();
+  carregarGrupoPublico();
 </script>
 </body>
 </html>
