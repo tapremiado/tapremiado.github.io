@@ -231,6 +231,10 @@ async function carregarGrupoPublico(){
     box.innerHTML =
       "🏆 GRUPO 001 FINALIZADO<br>" +
       "Número contemplado: " + g.numero_contemplado;
+    document.getElementById("nome").disabled = true;
+document.getElementById("telefone").disabled = true;
+document.getElementById("cpf").disabled = true;
+document.getElementById("botao").disabled = true;
   }else{
     box.style.background = "#fff3cd";
     box.innerHTML = "🟡 GRUPO 001 EM ANDAMENTO";
