@@ -94,7 +94,7 @@ input,button{padding:12px;border-radius:8px;border:1px solid #bbb;font-size:15px
 <div class="premio">Valor de referência do prêmio: R$ 50.000,00</div>
 <div class="preco">R$ 100,00 por número</div>
   <div id="statusGrupoPublico" style="text-align:center;margin:12px 0;padding:12px;border-radius:10px;background:#fff3cd;font-weight:bold;">
-  Carregando situação do Grupo 001...
+  Carregando situação do Grupo atual...
 </div>
 <div class="legend">
 <span><i class="dot" style="background:#fff"></i>Disponível</span>
@@ -216,21 +216,21 @@ async function carregarGrupoPublico(){
 
   if(error){
     console.error(error);
-    box.textContent = "Grupo 001";
+    box.textContent = "Grupo atual";
     return;
   }
 
   const g = Array.isArray(data) ? data[0] : data;
 
   if(!g){
-    box.textContent = "Grupo 001";
+    box.textContent = "Grupo atual";
     return;
   }
 
   if(g.status === "finalizado"){
     box.style.background = "#d1e7dd";
     box.innerHTML =
-      "🏆 GRUPO 001 FINALIZADO<br>" +
+      "🏆 GRUPO " + (g.codigo || "---") + " FINALIZADO<br>" +
       "Número contemplado: " + g.numero_contemplado;
     document.getElementById("nome").disabled = true;
 document.getElementById("telefone").disabled = true;
@@ -238,7 +238,7 @@ document.getElementById("cpf").disabled = true;
 document.getElementById("botao").disabled = true;
   }else{
     box.style.background = "#fff3cd";
-    box.innerHTML = "🟡 GRUPO 001 EM ANDAMENTO";
+    box.innerHTML = "🟡 GRUPO " + (g.codigo || "---") + " EM ANDAMENTO";
   }
 }
     
