@@ -58,7 +58,7 @@ button{cursor:pointer;font-weight:bold}
 <div id="reservas"></div>
 
 <div class="card" id="controleGrupo" style="margin-top:20px">
-  <h2>Controle do Grupo 001</h2>
+  <h2>Controle do Grupo <span id="grupoCodigo">001</span></h2>
   <p><strong>Prêmio:</strong> <span id="grupoPremio">Carregando...</span></p>
   <p><strong>Status:</strong> <span id="grupoStatus">Carregando...</span></p>
 
@@ -486,6 +486,7 @@ function gerarComprovante(r){
     return;
   }
 
+  document.getElementById("grupoCodigo").textContent=g.codigo || "---";
   document.getElementById("grupoPremio").textContent=g.premio || "-";
 
   if(g.status==="finalizado"){
