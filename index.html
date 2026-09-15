@@ -211,7 +211,7 @@ async function carregarGrupoPublico(){
   const box = document.getElementById("statusGrupoPublico");
 
   const {data,error} = await db.rpc("consultar_grupo_publico",{
-    p_codigo:"001"
+    p_codigo:"002"
   });
 
   if(error){
