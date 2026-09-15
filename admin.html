@@ -520,7 +520,7 @@ function gerarComprovante(r){
 
   const {error}=await db.rpc("admin_finalizar_grupo",{
     p_codigo:"001",
-    p_numero:numero
+    p_numero_contemplado:numero
   });
 
   if(error){
