@@ -166,6 +166,15 @@ async function verificar(){
     "<p><strong>Participante:</strong> "+esc(r.nome)+"</p>" +
     "<p><strong>Status:</strong> PAGAMENTO CONFIRMADO</p>" +
     "<p><strong>Confirmado em:</strong> "+esc(dataBR(r.confirmado_em))+"</p>" +
+    "<p><strong>Prêmio:</strong> "+esc(r.premio || "Não informado")+"</p>" +
+"<p><strong>Grupo:</strong> "+esc(r.grupo || "Não informado")+"</p>" +
+(r.status_grupo === "finalizado"
+  ? (String(r.numero) === String(r.numero_contemplado)
+      ? "<p style='font-size:20px;font-weight:bold;'>🏆 PARABÉNS! VOCÊ É O GANHADOR DO PRÊMIO!</p>"
+      : (Math.abs(Number(r.numero) - Number(r.numero_contemplado)) === 1
+         ? "<p style='font-size:18px;font-weight:bold;'>🍀 NÃO FOI DESTA VEZ, MAS VOCÊ PASSOU PERTO! O PRÓXIMO GANHADOR PODE SER VOCÊ!</p>"
+          : "<p style='font-size:18px;font-weight:bold;'>NÃO FOI DESTA VEZ. 🍀 O PRÓXIMO GANHADOR PODE SER VOCÊ!</p>"))
+  : "<p style='font-size:18px;font-weight:bold;color:#d99a00;'>🟡 GRUPO EM ANDAMENTO</p>") +
     "<p><strong>Código:</strong> "+esc(codigo)+"</p>" +
     "<p>Dados conferidos diretamente no registro oficial do sistema Tá Premiado.</p>";
 }
