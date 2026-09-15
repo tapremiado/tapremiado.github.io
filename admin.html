@@ -536,11 +536,29 @@ function gerarComprovante(r){
 await carregarConfirmadosSeparado();
   };
   document.getElementById("btnNovoPremio").onclick = async function(){
-  if(!confirm("Deseja iniciar um novo prêmio? O Grupo 001 atual continuará finalizado no histórico.")){
+
+  const premio = prompt("Digite o nome do novo prêmio:");
+
+  if(!premio || !premio.trim()){
     return;
   }
 
-  alert("Vamos preparar o novo prêmio.");
+  if(!confirm("Confirma a criação do novo prêmio: " + premio.trim() + "?")){
+    return;
+  }
+
+  const {data,error} = await db.rpc("admin_novo_premio",{
+    p_premio: premio.trim()
+  });
+
+  if(error){
+    alert("Não foi possível criar o novo prêmio: " + error.message);
+    return;
+  }
+
+  alert("Novo prêmio criado com sucesso! Grupo " + data);
+
+  await carregarGrupo();
 };
 </script>
 </body>
