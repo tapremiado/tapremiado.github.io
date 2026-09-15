@@ -172,6 +172,7 @@ async function carregar(){
    else{
      if(escolhidos.has(item.numero)) b.classList.add("selecionado");
      b.onclick=()=>{
+       if(document.getElementById("statusGrupoPublico").textContent.includes("FINALIZADO")) return;
        if(escolhidos.has(item.numero)) escolhidos.delete(item.numero);
        else escolhidos.add(item.numero);
        b.classList.toggle("selecionado");
