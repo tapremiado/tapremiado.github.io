@@ -202,7 +202,9 @@ async function carregar(){
   const numeros=r.numeros.join(", ");
   const total=r.numeros.length*100;
   const mensagem=`Olá, ${r.nome}! Sua reserva no Tá Premiado foi registrada.\n\n🎟️ Números reservados: ${numeros}\n💰 Valor total: R$ ${total.toFixed(2).replace(".",",")}\n\n💳 PIX para pagamento:\nPIX-TESTE-NAO-PAGAR\n\nApós realizar o pagamento, envie o comprovante por este WhatsApp para confirmarmos sua participação.`;
-  window.open("https://web.whatsapp.com/send?phone="+fone+"&text="+encodeURIComponent(mensagem),"_blank");
+  const ehCelular=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const linkWhats=ehCelular?"https://wa.me/"+fone+"?text="+encodeURIComponent(mensagem):"https://web.whatsapp.com/send?phone="+fone+"&text="+encodeURIComponent(mensagem);
+window.open(linkWhats,"_blank");
 };
    reservasBox.appendChild(div);
  });
