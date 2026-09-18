@@ -201,18 +201,18 @@ async function carregar(){
   const fone=telefone.startsWith("55")?telefone:"55"+telefone;
   const numeros=r.numeros.join(", ");
   const total=r.numeros.length*100;
-  const mensagem=`Olá, ${r.nome}! 🍀
+  const mensagem=`Olá, ${r.nome}!
 
 Sua reserva no Tá Premiado foi registrada com sucesso.
 
-🎟️ Número(s) reservado(s): ${numeros}
-💰 Valor total: R$ ${total.toFixed(2).replace(".",",")}
+Número(s) reservado(s): ${numeros}
+Valor total: R$ ${total.toFixed(2).replace(".",",")}
 
 Para prosseguir com sua participação, responda CONFIRMO por este WhatsApp.
 
 Após sua confirmação, enviaremos os dados para pagamento.
 
-Tá Premiado 🍀
+Tá Premiado
 Segurança, transparência e confiança em cada etapa.`;
   const ehCelular=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const linkWhats=ehCelular?"https://wa.me/"+fone+"?text="+encodeURIComponent(mensagem):"https://web.whatsapp.com/send?phone="+fone+"&text="+encodeURIComponent(mensagem);
