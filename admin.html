@@ -346,12 +346,39 @@ async function carregarConfirmadosSeparado(){
         </div>
         <div class="acoes">
           <button class="comprovante">GERAR COMPROVANTE</button>
+          ${r.reserva_id ? `<button class="liberar">LIBERAR TODOS (${quantidade})</button>` : ""}
         </div>`;
 
       div.querySelector(".comprovante").onclick=()=>gerarComprovanteAgrupado(r);
+
+      const btnLiberarTodos=div.querySelector(".liberar");
+      if(btnLiberarTodos){
+        btnLiberarTodos.onclick=()=>liberarReservaConfirmada(r.reserva_id,quantidade);
+      }
+
       confirmadosBox.appendChild(div);
     });
 }
+async function liberarReservaConfirmada(reservaId,qtd){
+  if(!confirm(`Liberar TODOS os ${qtd} número(s) desta compra confirmada? Eles voltarão a ficar disponíveis e os dados desta confirmação serão apagados.`)) return;
+
+  msg.textContent="Liberando compra confirmada...";
+
+  const {data,error}=await db.rpc("admin_liberar_reserva_confirmada",{
+    p_reserva_id:reservaId
+  });
+
+  if(error){
+    console.error(error);
+    msg.textContent="Erro ao liberar a compra confirmada.";
+    return;
+  }
+
+  msg.textContent=`${data} número(s) liberado(s) com sucesso.`;
+  await carregar();
+  await carregarConfirmadosSeparado();
+}
+
 async function liberarConfirmado(numero){
  if(!confirm(`Liberar o número confirmado ${numero}? Ele voltará a ficar disponível e os dados desta confirmação serão apagados.`)) return;
  msg.textContent="Liberando número confirmado...";
