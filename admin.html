@@ -296,35 +296,62 @@ async function carregarConfirmadosSeparado(){
     confirmadosBox.innerHTML='<div class="vazio">Erro ao carregar confirmados: '+esc(error.message || String(error))+'</div>';
     return;
   }
+
   const lista=Array.isArray(data)?data:[];
   confirmadosBox.innerHTML="";
+
   if(lista.length===0){
     confirmadosBox.innerHTML='<div class="vazio">Nenhum número confirmado.</div>';
     return;
   }
-  lista.sort((a,b)=>String(a.numero).localeCompare(String(b.numero)));
-  lista.forEach(r=>{
-    const div=document.createElement("div");
-    div.className="reserva";
-    div.innerHTML=`
-      <div><strong style="color:#198754">CONFIRMADO</strong></div>
-      <div class="numeros">${esc(r.numero)}</div>
-      <div class="dados">
-        <strong>Nome:</strong> ${esc(r.nome || "")}<br>
-        <strong>WhatsApp:</strong> ${esc(r.telefone || r.whatsapp || "")}<br>
-        <strong>CPF:</strong> ${esc(r.cpf || "")}<br>
-        <strong>Reservado em:</strong> ${esc(dataBR(r.reservado_em))}
-      </div>
-      <div class="acoes">
-      <button class="comprovante">GERAR COMPROVANTE</button>
-        <button class="liberar">LIBERAR NÚMERO</button>
-      </div>`;
-    div.querySelector(".liberar").onclick=()=>liberarConfirmado(r.numero);
-    div.querySelector(".comprovante").onclick=()=>gerarComprovante(r);
-    confirmadosBox.appendChild(div);
-  });
-}
 
+  const gruposConfirmados=new Map();
+
+  lista.forEach(r=>{
+    // Reservas novas: agrupa pelo reserva_id.
+    // Registros antigos sem reserva_id continuam individuais.
+    const chave=r.reserva_id
+      ? "reserva:"+r.reserva_id
+      : "antigo:"+(r.id ?? r.numero);
+
+    if(!gruposConfirmados.has(chave)){
+      gruposConfirmados.set(chave,{...r,numeros:[],registros:[]});
+    }
+
+    const g=gruposConfirmados.get(chave);
+    g.numeros.push(r.numero);
+    g.registros.push(r);
+  });
+
+  [...gruposConfirmados.values()]
+    .sort((a,b)=>new Date(b.confirmado_em || b.reservado_em)-new Date(a.confirmado_em || a.reservado_em))
+    .forEach(r=>{
+      r.numeros.sort((a,b)=>String(a).localeCompare(String(b)));
+
+      const quantidade=r.numeros.length;
+      const total=quantidade*100;
+
+      const div=document.createElement("div");
+      div.className="reserva";
+      div.innerHTML=`
+        <div><strong style="color:#198754">CONFIRMADO</strong></div>
+        <div class="numeros">${r.numeros.map(esc).join(", ")}</div>
+        <div class="dados">
+          <strong>Quantidade:</strong> ${quantidade} número(s)<br>
+          <strong>Valor total:</strong> R$ ${total.toFixed(2).replace(".",",")}<br>
+          <strong>Nome:</strong> ${esc(r.nome || "")}<br>
+          <strong>WhatsApp:</strong> ${esc(r.telefone || r.whatsapp || "")}<br>
+          <strong>CPF:</strong> ${esc(r.cpf || "")}<br>
+          <strong>Reservado em:</strong> ${esc(dataBR(r.reservado_em))}
+        </div>
+        <div class="acoes">
+          <button class="comprovante">GERAR COMPROVANTE</button>
+        </div>`;
+
+      div.querySelector(".comprovante").onclick=()=>gerarComprovanteAgrupado(r);
+      confirmadosBox.appendChild(div);
+    });
+}
 async function liberarConfirmado(numero){
  if(!confirm(`Liberar o número confirmado ${numero}? Ele voltará a ficar disponível e os dados desta confirmação serão apagados.`)) return;
  msg.textContent="Liberando número confirmado...";
@@ -358,6 +385,74 @@ async function alterar(numero,acao,qtd){
  msg.textContent=`Operação concluída em ${data} número(s).`;
  await carregar();
 }
+function gerarComprovanteAgrupado(r){
+  const nome=r.nome || "";
+  const whatsapp=r.telefone || r.whatsapp || "";
+  const cpf=r.cpf || "";
+  const numeros=Array.isArray(r.numeros)?r.numeros:[r.numero];
+  const quantidade=numeros.length;
+  const total="R$ "+(quantidade*100).toFixed(2).replace(".",",");
+  const dataConfirmacao=r.confirmado_em
+    ? new Date(r.confirmado_em).toLocaleString("pt-BR")
+    : "Não informada";
+
+  // Enquanto a verificação por compra é preparada no banco,
+  // não exibimos um código individual como se validasse a compra inteira.
+  const w=window.open("", "_blank", "width=800,height=900");
+
+  w.document.write(`
+  <!DOCTYPE html>
+  <html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <title>Comprovante Tá Premiado</title>
+    <style>
+      body{font-family:Arial,sans-serif;background:#f4f4f4;padding:30px;color:#222}
+      .comprovante{max-width:650px;margin:auto;background:#fff;border:2px solid #111;border-radius:16px;padding:28px}
+      h1{text-align:center;margin:0;font-size:32px}
+      h2{text-align:center;margin:8px 0 25px;font-size:18px}
+      .status{background:#198754;color:white;text-align:center;font-weight:bold;padding:12px;border-radius:8px;margin-bottom:24px}
+      .linha{padding:9px 0;border-bottom:1px solid #ddd;font-size:17px}
+      .numeros-comp{text-align:center;font-size:30px;font-weight:bold;margin:20px 0;line-height:1.4}
+      .aviso{margin-top:22px;font-size:13px;text-align:center;line-height:1.5}
+      .imprimir{display:block;width:100%;margin-top:25px;padding:13px;border:0;border-radius:8px;background:#111;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}
+      @media print{body{background:#fff;padding:0}.comprovante{border:0}.imprimir{display:none}}
+    </style>
+  </head>
+  <body>
+    <div class="comprovante">
+      <h1>TÁ PREMIADO</h1>
+      <h2>COMPROVANTE DE PARTICIPAÇÃO</h2>
+
+      <div class="status">PAGAMENTO CONFIRMADO</div>
+
+      <div class="linha"><strong>Participante:</strong> ${esc(nome)}</div>
+      <div class="linha"><strong>CPF:</strong> ${esc(cpf)}</div>
+      <div class="linha"><strong>WhatsApp:</strong> ${esc(whatsapp)}</div>
+      <div class="linha"><strong>Grupo:</strong> 001</div>
+      <div class="linha"><strong>Prêmio:</strong> Renault Kwid</div>
+      <div class="linha"><strong>Valor de referência do prêmio:</strong> R$ 50.000,00</div>
+
+      <div class="numeros-comp">NÚMEROS ${numeros.map(esc).join(", ")}</div>
+
+      <div class="linha"><strong>Quantidade:</strong> ${quantidade} número(s)</div>
+      <div class="linha"><strong>Valor total:</strong> ${total}</div>
+      <div class="linha"><strong>Confirmado em:</strong> ${esc(dataConfirmacao)}</div>
+
+      <div class="aviso">
+        Comprovante referente aos números confirmados desta mesma reserva no sistema
+        <strong>Tá Premiado</strong>.
+      </div>
+
+      <button class="imprimir" onclick="window.print()">IMPRIMIR / SALVAR EM PDF</button>
+    </div>
+  </body>
+  </html>
+  `);
+
+  w.document.close();
+}
+
 function gerarComprovante(r){
   const nome = r.nome || "";
   const numero = r.numero || "";
