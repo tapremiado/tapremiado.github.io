@@ -193,7 +193,7 @@ async function carregar(){
        <button class="liberar">LIBERAR TODOS (${r.numeros.length})</button>
        <button class="whatsapp">💬 CHAMAR NO WHATSAPP</button>
      </div>`;
-   const [conf,lib]=div.querySelectorAll("button");
+   const [conf,lib,whats]=div.querySelectorAll("button");
    conf.onclick=()=>alterar(r.numeros[0],"confirmar",r.numeros.length);
    lib.onclick=()=>alterar(r.numeros[0],"liberar",r.numeros.length);
    whats.onclick=()=>{
