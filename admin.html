@@ -26,6 +26,7 @@ button{cursor:pointer;font-weight:bold}
 .acoes button{margin:0}
 .confirmar{background:#198754;color:#fff;border:0}
 .liberar{background:#dc3545;color:#fff;border:0}
+.pix{background:#2563eb;color:#fff;border:0}
 .msg{text-align:center;font-weight:bold;margin:12px 0}
 .vazio{text-align:center;padding:25px;background:#fff;border-radius:12px}
 @media(max-width:650px){.contadores{grid-template-columns:1fr}.acoes{flex-direction:column}}
@@ -191,9 +192,10 @@ async function carregar(){
      <div class="acoes">
        <button class="confirmar">CONFIRMAR TODOS (${r.numeros.length})</button>
        <button class="liberar">LIBERAR TODOS (${r.numeros.length})</button>
-       <button class="whatsapp">💬 CHAMAR NO WHATSAPP</button>
+       <button class="whatsapp">CHAMAR NO WHATSAPP</button>
+        <button class="pix">ENVIAR DADOS PIX</button>
      </div>`;
-   const [conf,lib,whats]=div.querySelectorAll("button");
+   const [conf,lib,whats,pix]=div.querySelectorAll("button");
    conf.onclick=()=>alterar(r.numeros[0],"confirmar",r.numeros.length);
    lib.onclick=()=>alterar(r.numeros[0],"liberar",r.numeros.length);
    whats.onclick=()=>{
@@ -218,6 +220,34 @@ Segurança, transparência e confiança em cada etapa.`;
 const linkWhats=ehCelular?"https://wa.me/"+fone+"?text="+encodeURIComponent(mensagem):"https://web.whatsapp.com/send?phone="+fone+"&text="+encodeURIComponent(mensagem);
 window.open(linkWhats,"_blank");
 };
+
+    pix.onclick=()=>{
+      const telefone=String(r.telefone||"").replace(/\D/g,"");
+      const fone=telefone.startsWith("55")?telefone:"55"+telefone;
+      const numeros=r.numeros.join(", ");
+      const total=r.numeros.length*100;
+      const mensagemPix=`Olá, ${r.nome}!
+
+Conforme sua confirmação, seguem os dados para pagamento da sua reserva no Tá Premiado.
+
+Número(s) reservado(s): ${numeros}
+Valor total: R$ ${total.toFixed(2).replace(".",",")}
+
+Chave PIX:
+PIX-TESTE-NAO-PAGAR
+
+Após realizar o pagamento, envie o comprovante nesta conversa para conferência.
+
+Importante: não realize o pagamento caso seus números tenham sido cancelados ou liberados. Em caso de dúvida, confirme conosco antes de efetuar o PIX.
+
+Após a conferência do pagamento, seus números serão confirmados e enviaremos o comprovante de participação.
+
+Tá Premiado
+Segurança, transparência e confiança em cada etapa.`;
+      const ehCelular=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const linkPix=ehCelular?"https://wa.me/"+fone+"?text="+encodeURIComponent(mensagemPix):"https://web.whatsapp.com/send?phone="+fone+"&text="+encodeURIComponent(mensagemPix);
+      window.open(linkPix,"_blank");
+    };
    reservasBox.appendChild(div);
  });
 
