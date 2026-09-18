@@ -1,743 +1,186 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Painel Administrativo - F-1000</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verificar Comprovante - Tá Premiado</title>
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:#f4f5f7;color:#222}
-.wrap{max-width:1100px;margin:auto;padding:18px}
-h1{text-align:center;margin:6px 0 18px}
-.card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px;margin-bottom:14px}
-.login{max-width:430px;margin:50px auto}
-input,button{width:100%;padding:12px;border-radius:8px;border:1px solid #bbb;font-size:15px;margin-top:8px}
-button{cursor:pointer;font-weight:bold}
-.entrar{background:#111;color:#fff;border:0}
-.topo{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
-.sair{width:auto;background:#eee}
-.contadores{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
-.contador{text-align:center;background:#fff;border:1px solid #ddd;border-radius:10px;padding:12px}
-.contador strong{display:block;font-size:25px;margin-top:5px}
-.reserva{background:#fff;border:1px solid #ddd;border-radius:12px;padding:14px;margin-bottom:12px}
-.numeros{font-size:20px;font-weight:bold;margin:8px 0}
-.dados{line-height:1.6}
-.acoes{display:flex;gap:8px;margin-top:12px}
-.acoes button{margin:0}
-.confirmar{background:#198754;color:#fff;border:0}
-.liberar{background:#dc3545;color:#fff;border:0}
-.pix{background:#2563eb;color:#fff;border:0}
-.msg{text-align:center;font-weight:bold;margin:12px 0}
-.vazio{text-align:center;padding:25px;background:#fff;border-radius:12px}
-@media(max-width:650px){.contadores{grid-template-columns:1fr}.acoes{flex-direction:column}}
+.caixa{max-width:600px;margin:70px auto;background:#fff;padding:30px;border-radius:14px;box-shadow:0 3px 15px #0002;text-align:center}
+h1{margin-top:0}
+.subtitulo{color:#555;margin-bottom:25px}
+input{width:100%;padding:15px;font-size:17px;text-align:center;text-transform:uppercase;border:1px solid #bbb;border-radius:8px}
+button{width:100%;margin-top:12px;padding:15px;border:0;border-radius:8px;background:#198754;color:white;font-size:16px;font-weight:bold;cursor:pointer}
+.resultado{margin-top:25px;padding:20px;border-radius:10px;display:none}
+.valido{background:#e8f7ee;border:2px solid #198754}
+.invalido{background:#fdecec;border:2px solid #dc3545}
+.numero{font-size:32px;font-weight:bold;margin:15px 0;line-height:1.4}
 </style>
 </head>
+
 <body>
-<div class="wrap">
+<div class="caixa">
+  <h1>Verificar Comprovante</h1>
+  <div class="subtitulo">Consulte a autenticidade do seu comprovante de participação.</div>
 
-<div id="loginBox" class="card login">
-<h1>Painel Administrativo</h1>
-<input id="email" type="email" placeholder="E-mail">
-<input id="senha" type="password" placeholder="Senha">
-<button id="entrar" class="entrar">ENTRAR</button>
-<div id="loginMsg" class="msg"></div>
-</div>
+  <input id="codigo" placeholder="Digite o código de autenticidade" autocomplete="off">
+  <button onclick="verificar()">VERIFICAR COMPROVANTE</button>
 
-<div id="painel" style="display:none">
-<div class="topo">
-<h1>Painel F-1000</h1>
-<button id="sair" class="sair">Sair</button>
-</div>
-
-<div class="contadores">
-<div class="contador">Disponíveis<strong id="cDisponiveis">0</strong></div>
-<div class="contador">Reservados<strong id="cReservados">0</strong></div>
-<div class="contador">Confirmados<strong id="cConfirmados">0</strong></div>
-</div>
-
-<div id="msg" class="msg"></div>
-<div id="reservas"></div>
-
-<div class="card" id="controleGrupo" style="margin-top:20px">
-  <h2>Controle do Grupo <span id="grupoCodigo">001</span></h2>
-  <p><strong>Prêmio:</strong> <span id="grupoPremio">Carregando...</span></p>
-  <p><strong>Status:</strong> <span id="grupoStatus">Carregando...</span></p>
-
-  <div id="grupoEmAndamento">
-    <input id="numeroContemplado" type="text" maxlength="3" placeholder="Número contemplado (001 a 999)">
-    <button id="btnFinalizarGrupo" style="background:#198754;color:#fff;border:0">
-      FINALIZAR GRUPO
-    </button>
-  </div>
-
-  <div id="grupoFinalizado" style="display:none">
-    <p><strong>Número contemplado:</strong> <span id="grupoNumeroContemplado"></span></p>
-    <p><strong>Data da apuração:</strong> <span id="grupoDataApuracao"></span></p>
-    <button id="btnNovoPremio" style="background:#2563eb;color:#fff;border:0">
-  NOVO PRÊMIO
-</button>
-  </div>
-</div>
-  <h2 style="margin-top:28px">Confirmados</h2>
-<div id="confirmados"></div>
-</div>
-
+  <div id="resultado" class="resultado"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const {createClient}=supabase;
-const db=createClient(
+const { createClient } = supabase;
+
+const db = createClient(
   "https://sjvzuoflqfyfbnyravmy.supabase.co",
-  "sb_publishable_GgzTsAlQtOLRYiBKItXSCA_QBIEA8TW"
+  "sb_publishable_GgzTsAlQtOLRYiBKItXSCA_QBIEA8TW",
+  {
+    auth:{
+      persistSession:false,
+      autoRefreshToken:false,
+      detectSessionInUrl:false
+    }
+  }
 );
 
-const loginBox=document.getElementById("loginBox");
-const painel=document.getElementById("painel");
-const loginMsg=document.getElementById("loginMsg");
-const msg=document.getElementById("msg");
-const reservasBox=document.getElementById("reservas");
-const confirmadosBox=document.getElementById("confirmados");
-
 function esc(v){
- return String(v??"")
-   .replaceAll("&","&amp;").replaceAll("<","&lt;")
-   .replaceAll(">","&gt;").replaceAll('"',"&quot;");
+  return String(v ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;");
 }
 
 function dataBR(v){
- if(!v)return "";
- return new Date(v).toLocaleString("pt-BR");
+  if(!v) return "";
+  return new Date(v).toLocaleString("pt-BR");
 }
 
-async function verificarAdmin(){
- const {data,error}=await db.rpc("eh_admin");
- return !error && data===true;
+function mensagemGrupo(r,numeros){
+  if(r.status_grupo !== "finalizado"){
+    return "<p style='font-size:18px;font-weight:bold;color:#d99a00;'>🟡 GRUPO EM ANDAMENTO</p>";
+  }
+
+  const contemplado=String(r.numero_contemplado ?? "");
+  const ganhou=numeros.some(n=>String(n)===contemplado);
+
+  if(ganhou){
+    return "<p style='font-size:20px;font-weight:bold;'>🏆 PARABÉNS! UM DOS SEUS NÚMEROS É O GANHADOR DO PRÊMIO!</p>";
+  }
+
+  const perto=numeros.some(n=>
+    contemplado !== "" &&
+    Math.abs(Number(n)-Number(contemplado))===1
+  );
+
+  if(perto){
+    return "<p style='font-size:18px;font-weight:bold;'>🍀 NÃO FOI DESTA VEZ, MAS UM DOS SEUS NÚMEROS PASSOU PERTO! O PRÓXIMO GANHADOR PODE SER VOCÊ!</p>";
+  }
+
+  return "<p style='font-size:18px;font-weight:bold;'>NÃO FOI DESTA VEZ. 🍀 O PRÓXIMO GANHADOR PODE SER VOCÊ!</p>";
 }
 
-async function abrirPainel(){
- const admin=await verificarAdmin();
- if(!admin){
-   await db.auth.signOut();
-   loginMsg.textContent="Usuário sem permissão administrativa.";
-   loginBox.style.display="block";
-   painel.style.display="none";
-   return;
- }
- loginBox.style.display="none";
- painel.style.display="block";
- await carregar();
- await carregarConfirmadosSeparado();
-}
+async function verificar(){
+  const codigo=document.getElementById("codigo").value.trim().toUpperCase();
+  const resultado=document.getElementById("resultado");
 
-document.getElementById("entrar").onclick=async()=>{
- const email=document.getElementById("email").value.trim();
- const password=document.getElementById("senha").value;
- loginMsg.textContent="Entrando...";
- const {error}=await db.auth.signInWithPassword({email,password});
- if(error){loginMsg.textContent="E-mail ou senha incorretos.";return}
- loginMsg.textContent="";
- await abrirPainel();
-};
-
-document.getElementById("sair").onclick=async()=>{
- await db.auth.signOut();
- painel.style.display="none";
- loginBox.style.display="block";
- document.getElementById("senha").value="";
-};
-
-async function carregar(){
- msg.textContent="Carregando...";
- const {data,error}=await db.rpc("admin_listar_reservas");
- if(error){msg.textContent="Não foi possível carregar o painel.";return}
-
- const todos=data||[];
- document.getElementById("cDisponiveis").textContent=todos.filter(x=>x.status==="disponivel").length;
- document.getElementById("cReservados").textContent=todos.filter(x=>x.status==="reservado").length;
- document.getElementById("cConfirmados").textContent=todos.filter(x=>x.status==="confirmado"||x.status==="pago").length;
-
- const reservados=todos.filter(x=>x.status==="reservado");
- const grupos=new Map();
-
- reservados.forEach(x=>{
-   const chave=[x.nome,x.telefone,x.cpf,x.reservado_em].join("|");
-   if(!grupos.has(chave)) grupos.set(chave,{...x,numeros:[]});
-   grupos.get(chave).numeros.push(x.numero);
- });
-
- reservasBox.innerHTML="";
- msg.textContent="";
-
- if(grupos.size===0){
-   reservasBox.innerHTML='<div class="vazio">Nenhuma reserva aguardando confirmação.</div>';
-   return;
- }
-
- [...grupos.values()]
- .sort((a,b)=>new Date(b.reservado_em)-new Date(a.reservado_em))
- .forEach(r=>{
-   r.numeros.sort();
-   const div=document.createElement("div");
-   div.className="reserva";
-   div.innerHTML=`
-     <div><strong>RESERVADO</strong></div>
-     <div class="numeros">${r.numeros.map(esc).join(", ")}</div>
-     <div class="dados">
-       <strong>Nome:</strong> ${esc(r.nome)}<br>
-       <strong>WhatsApp:</strong> ${esc(r.telefone || r.whatsapp || "")}<br>
-       <strong>CPF:</strong> ${esc(r.cpf)}<br>
-       <strong>Reservado em:</strong> ${esc(dataBR(r.reservado_em))}
-     </div>
-     <div class="acoes">
-       <button class="confirmar">CONFIRMAR TODOS (${r.numeros.length})</button>
-       <button class="liberar">LIBERAR TODOS (${r.numeros.length})</button>
-       <button class="whatsapp">CHAMAR NO WHATSAPP</button>
-        <button class="pix">ENVIAR DADOS PIX</button>
-     </div>`;
-   const [conf,lib,whats,pix]=div.querySelectorAll("button");
-   conf.onclick=()=>alterar(r.numeros[0],"confirmar",r.numeros.length);
-   lib.onclick=()=>alterar(r.numeros[0],"liberar",r.numeros.length);
-   whats.onclick=()=>{
-  const telefone=String(r.telefone||"").replace(/\D/g,"");
-  const fone=telefone.startsWith("55")?telefone:"55"+telefone;
-  const numeros=r.numeros.join(", ");
-  const total=r.numeros.length*100;
-  const mensagem=`Olá, ${r.nome}!
-
-Sua reserva no Tá Premiado foi registrada com sucesso.
-
-Número(s) reservado(s): ${numeros}
-Valor total: R$ ${total.toFixed(2).replace(".",",")}
-
-Para prosseguir com sua participação, responda CONFIRMO por este WhatsApp.
-
-Após sua confirmação, enviaremos os dados para pagamento.
-
-Tá Premiado
-Segurança, transparência e confiança em cada etapa.`;
-  const ehCelular=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-const linkWhats=ehCelular?"https://wa.me/"+fone+"?text="+encodeURIComponent(mensagem):"https://web.whatsapp.com/send?phone="+fone+"&text="+encodeURIComponent(mensagem);
-window.open(linkWhats,"_blank");
-};
-
-    pix.onclick=()=>{
-      const telefone=String(r.telefone||"").replace(/\D/g,"");
-      const fone=telefone.startsWith("55")?telefone:"55"+telefone;
-      const numeros=r.numeros.join(", ");
-      const total=r.numeros.length*100;
-      const mensagemPix=`Olá, ${r.nome}!
-
-Conforme sua confirmação, seguem os dados para pagamento da sua reserva no Tá Premiado.
-
-Número(s) reservado(s): ${numeros}
-Valor total: R$ ${total.toFixed(2).replace(".",",")}
-
-Chave PIX:
-PIX-TESTE-NAO-PAGAR
-
-Após realizar o pagamento, envie o comprovante nesta conversa para conferência.
-
-Importante: não realize o pagamento caso seus números tenham sido cancelados ou liberados. Em caso de dúvida, confirme conosco antes de efetuar o PIX.
-
-Após a conferência do pagamento, seus números serão confirmados e enviaremos o comprovante de participação.
-
-Tá Premiado
-Segurança, transparência e confiança em cada etapa.`;
-      const ehCelular=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      const linkPix=ehCelular?"https://wa.me/"+fone+"?text="+encodeURIComponent(mensagemPix):"https://web.whatsapp.com/send?phone="+fone+"&text="+encodeURIComponent(mensagemPix);
-      window.open(linkPix,"_blank");
-    };
-   reservasBox.appendChild(div);
- });
-
- // Área de números já confirmados - consulta administrativa protegida
- const {data:confirmadosData,error:confirmadosErro}=await db.rpc("admin_listar_confirmados");
- const confirmados=(confirmadosData||[]);
-
- confirmadosBox.innerHTML="";
- if(confirmadosErro){
-   console.error(confirmadosErro);
-   confirmadosBox.innerHTML='<div class="vazio">Não foi possível carregar os confirmados: '+esc(confirmadosErro.message || confirmadosErro)+'</div>';
-   return;
- }
- if(confirmados.length===0){
-   confirmadosBox.innerHTML='<div class="vazio">Nenhum número confirmado.</div>';
- } else {
-   confirmados.forEach(r=>{
-     const div=document.createElement("div");
-     div.className="reserva";
-     div.innerHTML=`
-       <div><strong style="color:#198754">CONFIRMADO</strong></div>
-       <div class="numeros">${esc(r.numero)}</div>
-       <div class="dados">
-         <strong>Nome:</strong> ${esc(r.nome)}<br>
-         <strong>WhatsApp:</strong> ${esc(r.telefone || r.whatsapp || "")}<br>
-         <strong>CPF:</strong> ${esc(r.cpf)}<br>
-         <strong>Reserva original:</strong> ${esc(dataBR(r.reservado_em))}
-       </div>
-       <div class="acoes">
-         <button class="liberar">LIBERAR NÚMERO</button>
-       </div>`;
-     div.querySelector("button").onclick=()=>liberarConfirmado(r.numero);
-     confirmadosBox.appendChild(div);
-   });
- }
-}
-
-  carregarGrupo();
-
-
-async function carregarConfirmadosSeparado(){
-  confirmadosBox.innerHTML='<div class="vazio">Carregando confirmados...</div>';
-  const {data,error}=await db.rpc("admin_listar_confirmados");
-  if(error){
-    console.error("Erro confirmados:",error);
-    confirmadosBox.innerHTML='<div class="vazio">Erro ao carregar confirmados: '+esc(error.message || String(error))+'</div>';
+  if(!codigo){
+    resultado.style.display="block";
+    resultado.className="resultado invalido";
+    resultado.innerHTML="<strong>Digite o código do comprovante.</strong>";
     return;
   }
 
-  const lista=Array.isArray(data)?data:[];
-  confirmadosBox.innerHTML="";
+  resultado.style.display="block";
+  resultado.className="resultado";
+  resultado.innerHTML="Verificando...";
 
-  if(lista.length===0){
-    confirmadosBox.innerHTML='<div class="vazio">Nenhum número confirmado.</div>';
-    return;
-  }
+  // NOVOS COMPROVANTES: uma compra pode conter vários números.
+  if(codigo.startsWith("TPR-")){
+    const {data,error}=await db.rpc("verificar_reserva",{p_codigo:codigo});
 
-  const gruposConfirmados=new Map();
-
-  lista.forEach(r=>{
-    // Reservas novas: agrupa pelo reserva_id.
-    // Registros antigos sem reserva_id continuam individuais.
-    const chave=r.reserva_id
-      ? "reserva:"+r.reserva_id
-      : "antigo:"+(r.id ?? r.numero);
-
-    if(!gruposConfirmados.has(chave)){
-      gruposConfirmados.set(chave,{...r,numeros:[],registros:[]});
+    if(error){
+      resultado.className="resultado invalido";
+      resultado.innerHTML="<strong>Não foi possível realizar a consulta.</strong>";
+      return;
     }
 
-    const g=gruposConfirmados.get(chave);
-    g.numeros.push(r.numero);
-    g.registros.push(r);
-  });
+    if(!data || data.length===0){
+      resultado.className="resultado invalido";
+      resultado.innerHTML=
+        "<h2>COMPROVANTE NÃO ENCONTRADO</h2>"+
+        "<p>O código informado não corresponde a um comprovante válido no sistema.</p>";
+      return;
+    }
 
-  [...gruposConfirmados.values()]
-    .sort((a,b)=>new Date(b.confirmado_em || b.reservado_em)-new Date(a.confirmado_em || a.reservado_em))
-    .forEach(r=>{
-      r.numeros.sort((a,b)=>String(a).localeCompare(String(b)));
+    const r=data[0];
+    const numeros=data.map(x=>x.numero);
 
-      const quantidade=r.numeros.length;
-      const total=quantidade*100;
+    resultado.className="resultado valido";
+    resultado.innerHTML=
+      "<h2>✓ COMPROVANTE AUTÊNTICO</h2>"+
+      "<div class='numero'>NÚMEROS "+numeros.map(esc).join(", ")+"</div>"+
+      "<p><strong>Quantidade:</strong> "+numeros.length+" número(s)</p>"+
+      "<p><strong>Participante:</strong> "+esc(r.nome)+"</p>"+
+      "<p><strong>Status:</strong> PAGAMENTO CONFIRMADO</p>"+
+      "<p><strong>Confirmado em:</strong> "+esc(dataBR(r.confirmado_em))+"</p>"+
+      "<p><strong>Prêmio:</strong> "+esc(r.premio || "Não informado")+"</p>"+
+      "<p><strong>Grupo:</strong> "+esc(r.grupo || "Não informado")+"</p>"+
+      mensagemGrupo(r,numeros)+
+      "<p><strong>Código:</strong> "+esc(codigo)+"</p>"+
+      "<p>Dados conferidos diretamente no registro oficial do sistema Tá Premiado.</p>";
+    return;
+  }
 
-      const div=document.createElement("div");
-      div.className="reserva";
-      div.innerHTML=`
-        <div><strong style="color:#198754">CONFIRMADO</strong></div>
-        <div class="numeros">${r.numeros.map(esc).join(", ")}</div>
-        <div class="dados">
-          <strong>Quantidade:</strong> ${quantidade} número(s)<br>
-          <strong>Valor total:</strong> R$ ${total.toFixed(2).replace(".",",")}<br>
-          <strong>Nome:</strong> ${esc(r.nome || "")}<br>
-          <strong>WhatsApp:</strong> ${esc(r.telefone || r.whatsapp || "")}<br>
-          <strong>CPF:</strong> ${esc(r.cpf || "")}<br>
-          <strong>Reservado em:</strong> ${esc(dataBR(r.reservado_em))}
-        </div>
-        <div class="acoes">
-          <button class="comprovante">GERAR COMPROVANTE</button>
-          ${r.reserva_id ? `<button class="liberar">LIBERAR TODOS (${quantidade})</button>` : ""}
-        </div>`;
-
-      div.querySelector(".comprovante").onclick=()=>gerarComprovanteAgrupado(r);
-
-      const btnLiberarTodos=div.querySelector(".liberar");
-      if(btnLiberarTodos){
-        btnLiberarTodos.onclick=()=>liberarReservaConfirmada(r.reserva_id,quantidade);
-      }
-
-      confirmadosBox.appendChild(div);
-    });
-}
-async function liberarReservaConfirmada(reservaId,qtd){
-  if(!confirm(`Liberar TODOS os ${qtd} número(s) desta compra confirmada? Eles voltarão a ficar disponíveis e os dados desta confirmação serão apagados.`)) return;
-
-  msg.textContent="Liberando compra confirmada...";
-
-  const {data,error}=await db.rpc("admin_liberar_reserva_confirmada",{
-    p_reserva_id:reservaId
-  });
+  // COMPROVANTES ANTIGOS: mantém a verificação individual existente.
+  const {data,error}=await db.rpc("verificar_comprovante",{p_codigo:codigo});
 
   if(error){
-    console.error(error);
-    msg.textContent="Erro ao liberar a compra confirmada.";
+    resultado.className="resultado invalido";
+    resultado.innerHTML="<strong>Não foi possível realizar a consulta.</strong>";
     return;
   }
 
-  msg.textContent=`${data} número(s) liberado(s) com sucesso.`;
-  await carregar();
-  await carregarConfirmadosSeparado();
+  if(!data || data.length===0){
+    resultado.className="resultado invalido";
+    resultado.innerHTML=
+      "<h2>COMPROVANTE NÃO ENCONTRADO</h2>"+
+      "<p>O código informado não corresponde a um comprovante válido no sistema.</p>";
+    return;
+  }
+
+  const r=data[0];
+
+  resultado.className="resultado valido";
+  resultado.innerHTML=
+    "<h2>✓ COMPROVANTE AUTÊNTICO</h2>"+
+    "<div class='numero'>NÚMERO "+esc(r.numero)+"</div>"+
+    "<p><strong>Participante:</strong> "+esc(r.nome)+"</p>"+
+    "<p><strong>Status:</strong> PAGAMENTO CONFIRMADO</p>"+
+    "<p><strong>Confirmado em:</strong> "+esc(dataBR(r.confirmado_em))+"</p>"+
+    "<p><strong>Prêmio:</strong> "+esc(r.premio || "Não informado")+"</p>"+
+    "<p><strong>Grupo:</strong> "+esc(r.grupo || "Não informado")+"</p>"+
+    (r.status_grupo === "finalizado"
+      ? (String(r.numero) === String(r.numero_contemplado)
+          ? "<p style='font-size:20px;font-weight:bold;'>🏆 PARABÉNS! VOCÊ É O GANHADOR DO PRÊMIO!</p>"
+          : (Math.abs(Number(r.numero)-Number(r.numero_contemplado))===1
+              ? "<p style='font-size:18px;font-weight:bold;'>🍀 NÃO FOI DESTA VEZ, MAS VOCÊ PASSOU PERTO! O PRÓXIMO GANHADOR PODE SER VOCÊ!</p>"
+              : "<p style='font-size:18px;font-weight:bold;'>NÃO FOI DESTA VEZ. 🍀 O PRÓXIMO GANHADOR PODE SER VOCÊ!</p>"))
+      : "<p style='font-size:18px;font-weight:bold;color:#d99a00;'>🟡 GRUPO EM ANDAMENTO</p>")+
+    "<p><strong>Código:</strong> "+esc(codigo)+"</p>"+
+    "<p>Dados conferidos diretamente no registro oficial do sistema Tá Premiado.</p>";
 }
 
-async function liberarConfirmado(numero){
- if(!confirm(`Liberar o número confirmado ${numero}? Ele voltará a ficar disponível e os dados desta confirmação serão apagados.`)) return;
- msg.textContent="Liberando número confirmado...";
- const {data,error}=await db.rpc("admin_liberar_confirmado",{p_numero:numero});
- if(error){
-   console.error(error);
-   msg.textContent="Erro ao liberar o número confirmado.";
-   return;
- }
- if(data===true){
-   msg.textContent=`Número ${numero} liberado com sucesso.`;
- } else {
-   msg.textContent=`O número ${numero} não estava mais confirmado.`;
- }
- await carregar();
- await carregarConfirmadosSeparado();
+const params=new URLSearchParams(window.location.search);
+const codigoUrl=params.get("codigo");
+
+if(codigoUrl){
+  document.getElementById("codigo").value=codigoUrl.toUpperCase();
+  verificar();
 }
-
-async function alterar(numero,acao,qtd){
- const texto=acao==="confirmar"
-   ? `Confirmar ${qtd} número(s) desta reserva?`
-   : `Liberar ${qtd} número(s) desta reserva?`;
- if(!confirm(texto))return;
-
- msg.textContent=acao==="confirmar"?"Confirmando...":"Liberando...";
- const {data,error}=await db.rpc("admin_alterar_reserva",{
-   p_numero_referencia:numero,
-   p_acao:acao
- });
- if(error){msg.textContent="Erro ao realizar a operação.";return}
- msg.textContent=`Operação concluída em ${data} número(s).`;
- await carregar();
-}
-function gerarComprovanteAgrupado(r){
-  const nome=r.nome || "";
-  const whatsapp=r.telefone || r.whatsapp || "";
-  const cpf=r.cpf || "";
-  const numeros=Array.isArray(r.numeros)?r.numeros:[r.numero];
-  const quantidade=numeros.length;
-  const total="R$ "+(quantidade*100).toFixed(2).replace(".",",");
-  const dataConfirmacao=r.confirmado_em
-    ? new Date(r.confirmado_em).toLocaleString("pt-BR")
-    : "Não informada";
-
-  // Enquanto a verificação por compra é preparada no banco,
-  // não exibimos um código individual como se validasse a compra inteira.
-  const w=window.open("", "_blank", "width=800,height=900");
-
-  w.document.write(`
-  <!DOCTYPE html>
-  <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8">
-    <title>Comprovante Tá Premiado</title>
-    <style>
-      body{font-family:Arial,sans-serif;background:#f4f4f4;padding:30px;color:#222}
-      .comprovante{max-width:650px;margin:auto;background:#fff;border:2px solid #111;border-radius:16px;padding:28px}
-      h1{text-align:center;margin:0;font-size:32px}
-      h2{text-align:center;margin:8px 0 25px;font-size:18px}
-      .status{background:#198754;color:white;text-align:center;font-weight:bold;padding:12px;border-radius:8px;margin-bottom:24px}
-      .linha{padding:9px 0;border-bottom:1px solid #ddd;font-size:17px}
-      .numeros-comp{text-align:center;font-size:30px;font-weight:bold;margin:20px 0;line-height:1.4}
-      .aviso{margin-top:22px;font-size:13px;text-align:center;line-height:1.5}
-      .imprimir{display:block;width:100%;margin-top:25px;padding:13px;border:0;border-radius:8px;background:#111;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}
-      @media print{body{background:#fff;padding:0}.comprovante{border:0}.imprimir{display:none}}
-    </style>
-  </head>
-  <body>
-    <div class="comprovante">
-      <h1>TÁ PREMIADO</h1>
-      <h2>COMPROVANTE DE PARTICIPAÇÃO</h2>
-
-      <div class="status">PAGAMENTO CONFIRMADO</div>
-
-      <div class="linha"><strong>Participante:</strong> ${esc(nome)}</div>
-      <div class="linha"><strong>CPF:</strong> ${esc(cpf)}</div>
-      <div class="linha"><strong>WhatsApp:</strong> ${esc(whatsapp)}</div>
-      <div class="linha"><strong>Grupo:</strong> 001</div>
-      <div class="linha"><strong>Prêmio:</strong> Renault Kwid</div>
-      <div class="linha"><strong>Valor de referência do prêmio:</strong> R$ 50.000,00</div>
-
-      <div class="numeros-comp">NÚMEROS ${numeros.map(esc).join(", ")}</div>
-
-      <div class="linha"><strong>Quantidade:</strong> ${quantidade} número(s)</div>
-      <div class="linha"><strong>Valor total:</strong> ${total}</div>
-      <div class="linha"><strong>Confirmado em:</strong> ${esc(dataConfirmacao)}</div>
-
-      <div class="aviso">
-        Comprovante referente aos números confirmados desta mesma reserva no sistema
-        <strong>Tá Premiado</strong>.
-      </div>
-
-      <button class="imprimir" onclick="window.print()">IMPRIMIR / SALVAR EM PDF</button>
-    </div>
-  </body>
-  </html>
-  `);
-
-  w.document.close();
-}
-
-function gerarComprovante(r){
-  const nome = r.nome || "";
-  const numero = r.numero || "";
-  const whatsapp = r.telefone || r.whatsapp || "";
-  const cpf = r.cpf || "";
-  const codigo = r.codigo_comprovante || "Código não disponível";
-  const dataConfirmacao = r.confirmado_em
-    ? new Date(r.confirmado_em).toLocaleString("pt-BR")
-    : "Não informada";
-
-  const valor = "R$ 100,00";
-  const linkVerificacao = "https://tapremiado.github.io/verificar.html?codigo=" + encodeURIComponent(codigo);
-
-  const w = window.open("", "_blank", "width=800,height=900");
-
-  w.document.write(`
-  <!DOCTYPE html>
-  <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8">
-    <title>Comprovante Tá Premiado</title>
-    <style>
-      body{
-        font-family:Arial,sans-serif;
-        background:#f4f4f4;
-        padding:30px;
-        color:#222;
-      }
-      .comprovante{
-        max-width:650px;
-        margin:auto;
-        background:#fff;
-        border:2px solid #111;
-        border-radius:16px;
-        padding:28px;
-      }
-      h1{
-        text-align:center;
-        margin:0;
-        font-size:32px;
-      }
-      h2{
-        text-align:center;
-        margin:8px 0 25px;
-        font-size:18px;
-      }
-      .status{
-        background:#198754;
-        color:white;
-        text-align:center;
-        font-weight:bold;
-        padding:12px;
-        border-radius:8px;
-        margin-bottom:24px;
-      }
-      .linha{
-        padding:9px 0;
-        border-bottom:1px solid #ddd;
-        font-size:17px;
-      }
-      .numero{
-        text-align:center;
-        font-size:38px;
-        font-weight:bold;
-        margin:20px 0;
-      }
-      .codigo{
-        margin-top:25px;
-        background:#f3f3f3;
-        padding:16px;
-        border-radius:8px;
-        text-align:center;
-      }
-      .codigo strong{
-        display:block;
-        font-size:22px;
-        margin-top:8px;
-      }
-      .aviso{
-        margin-top:22px;
-        font-size:13px;
-        text-align:center;
-        line-height:1.5;
-      }
-      .imprimir{
-        display:block;
-        width:100%;
-        margin-top:25px;
-        padding:13px;
-        border:0;
-        border-radius:8px;
-        background:#111;
-        color:#fff;
-        font-size:16px;
-        font-weight:bold;
-        cursor:pointer;
-      }
-      @media print{
-        body{background:#fff;padding:0}
-        .comprovante{border:0}
-        .imprimir{display:none}
-      }
-    </style>
-  </head>
-
-  <body>
-    <div class="comprovante">
-
-      <h1>TÁ PREMIADO</h1>
-      <h2>COMPROVANTE DE PARTICIPAÇÃO</h2>
-
-      <div class="status">PAGAMENTO CONFIRMADO</div>
-
-      <div class="linha"><strong>Participante:</strong> ${nome}</div>
-      <div class="linha"><strong>CPF:</strong> ${cpf}</div>
-      <div class="linha"><strong>WhatsApp:</strong> ${whatsapp}</div>
-<div class="linha"><strong>Grupo:</strong> 001</div>
-<div class="linha"><strong>Prêmio:</strong> Renault Kwid</div>
-<div class="linha"><strong>Valor de referência do prêmio:</strong> R$ 50.000,00</div>
-      <div class="numero">NÚMERO ${numero}</div>
-
-      <div class="linha"><strong>Valor:</strong> ${valor}</div>
-      <div class="linha"><strong>Confirmado em:</strong> ${dataConfirmacao}</div>
-
-      <div class="codigo">
-        Código único de autenticidade
-        <strong>${codigo}</strong>
-      </div>
-      <div style="text-align:center; margin:14px 0;">
-  <img
-    src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(linkVerificacao)}"
-    alt="QR Code de verificação"
-    style="width:140px; height:140px;"
-  >
-  <div style="font-size:12px; margin-top:6px;">
-    Escaneie para verificar a autenticidade
-  </div>
-</div>
-      <div style="text-align:center; margin:14px 0; font-size:14px;">
-  Verifique a autenticidade deste comprovante em:<br>
-  <strong>tapremiado.github.io/verificar.html</strong>
-</div>
-
-      <div class="aviso">
-        Este comprovante somente será considerado autêntntico quando
-        os dados e o código acima coincidirem com o registro oficial
-        do sistema <strong>Tá Premiado</strong>.
-      </div>
-
-      <button class="imprimir" onclick="window.print()">
-        IMPRIMIR / SALVAR EM PDF
-      </button>
-
-    </div>
-  </body>
-  </html>
-  `);
-
-  w.document.close();
-}
-(async()=>{
- const {data:{session}}=await db.auth.getSession();
- if(session) await abrirPainel();
-})();
-
-  async function carregarGrupo(){
-  const {data,error}=await db.rpc("admin_consultar_grupo_atual");
-
-  if(error){
-    console.error("Erro ao carregar grupo:",error);
-    document.getElementById("grupoPremio").textContent="Erro ao carregar";
-    document.getElementById("grupoStatus").textContent="Erro ao carregar";
-    return;
-  }
-
-  const g=Array.isArray(data) ? data[0] : data;
-
-  if(!g){
-    document.getElementById("grupoPremio").textContent="Grupo não encontrado";
-    document.getElementById("grupoStatus").textContent="Grupo não encontrado";
-    return;
-  }
-
-  document.getElementById("grupoCodigo").textContent=g.codigo || "---";
-  document.getElementById("grupoPremio").textContent=g.premio || "-";
-
-  if(g.status==="finalizado"){
-    document.getElementById("grupoStatus").textContent="FINALIZADO";
-
-    document.getElementById("grupoEmAndamento").style.display="none";
-    document.getElementById("grupoFinalizado").style.display="block";
-
-    document.getElementById("grupoNumeroContemplado").textContent=
-      g.numero_contemplado || "-";
-
-    document.getElementById("grupoDataApuracao").textContent=
-      g.data_apuracao
-        ? new Date(g.data_apuracao).toLocaleString("pt-BR")
-        : "-";
-  }else{
-    document.getElementById("grupoStatus").textContent="EM ANDAMENTO";
-
-    document.getElementById("grupoEmAndamento").style.display="block";
-    document.getElementById("grupoFinalizado").style.display="none";
-  }
-}
-
-  document.getElementById("btnFinalizarGrupo").onclick = async function(){
-  const numero = document.getElementById("numeroContemplado").value.trim();
-
-  if(!numero){
-    alert("Digite o número contemplado.");
-    return;
-  }
-
-  if(!confirm("Confirma a finalização do Grupo 001 com o número " + numero + "?")){
-    return;
-  }
-
-  const {error}=await db.rpc("admin_finalizar_grupo",{
-    p_codigo:"001",
-    p_numero_contemplado:numero
-  });
-
-  if(error){
-    alert("Não foi possível finalizar o grupo: " + error.message);
-    return;
-  }
-
-  alert("Grupo 001 finalizado com sucesso!");
-  await carregarGrupo();
-await carregarConfirmadosSeparado();
-  };
-  document.getElementById("btnNovoPremio").onclick = async function(){
-
-  const premio = prompt("Digite o nome do novo prêmio:");
-
-  if(!premio || !premio.trim()){
-    return;
-  }
-
-  if(!confirm("Confirma a criação do novo prêmio: " + premio.trim() + "?")){
-    return;
-  }
-
-  const {data,error} = await db.rpc("admin_novo_premio",{
-    p_premio: premio.trim()
-  });
-
-  if(error){
-    alert("Não foi possível criar o novo prêmio: " + error.message);
-    return;
-  }
-
-  alert("Novo prêmio criado com sucesso! Grupo " + data);
-
-  await carregarGrupo();
-};
 </script>
 </body>
 </html>
