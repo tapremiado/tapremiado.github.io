@@ -191,10 +191,19 @@ async function carregar(){
      <div class="acoes">
        <button class="confirmar">CONFIRMAR TODOS (${r.numeros.length})</button>
        <button class="liberar">LIBERAR TODOS (${r.numeros.length})</button>
+       <button class="whatsapp">💬 CHAMAR NO WHATSAPP</button>
      </div>`;
    const [conf,lib]=div.querySelectorAll("button");
    conf.onclick=()=>alterar(r.numeros[0],"confirmar",r.numeros.length);
    lib.onclick=()=>alterar(r.numeros[0],"liberar",r.numeros.length);
+   whats.onclick=()=>{
+  const telefone=String(r.telefone||"").replace(/\D/g,"");
+  const fone=telefone.startsWith("55")?telefone:"55"+telefone;
+  const numeros=r.numeros.join(", ");
+  const total=r.numeros.length*100;
+  const mensagem=`Olá, ${r.nome}! Sua reserva no Tá Premiado foi registrada.\n\n🎟️ Números reservados: ${numeros}\n💰 Valor total: R$ ${total.toFixed(2).replace(".",",")}\n\n💳 PIX para pagamento:\nPIX-TESTE-NAO-PAGAR\n\nApós realizar o pagamento, envie o comprovante por este WhatsApp para confirmarmos sua participação.`;
+  window.open("https://wa.me/"+fone+"?text="+encodeURIComponent(mensagem),"_blank");
+};
    reservasBox.appendChild(div);
  });
 
