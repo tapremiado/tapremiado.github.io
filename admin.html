@@ -161,7 +161,9 @@ async function carregar(){
  const grupos=new Map();
 
  reservados.forEach(x=>{
-   const chave=[x.nome,x.telefone,x.cpf,x.reservado_em].join("|");
+   const chave=x.reserva_id
+      ? "reserva:"+x.reserva_id
+      : [x.nome,x.telefone,x.cpf,x.reservado_em].join("|");
    if(!grupos.has(chave)) grupos.set(chave,{...x,numeros:[]});
    grupos.get(chave).numeros.push(x.numero);
  });
