@@ -422,9 +422,14 @@ function gerarComprovanteAgrupado(r){
   const dataConfirmacao=r.confirmado_em
     ? new Date(r.confirmado_em).toLocaleString("pt-BR")
     : "Não informada";
+  const codigo=r.codigo_reserva || "";
+  const linkVerificacao="https://tapremiado.github.io/verificar.html?codigo="+encodeURIComponent(codigo);
 
-  // Enquanto a verificação por compra é preparada no banco,
-  // não exibimos um código individual como se validasse a compra inteira.
+  if(!codigo){
+    alert("Código de autenticidade da compra não disponível. Atualize o painel e tente novamente.");
+    return;
+  }
+
   const w=window.open("", "_blank", "width=800,height=900");
 
   w.document.write(`
@@ -466,8 +471,25 @@ function gerarComprovanteAgrupado(r){
       <div class="linha"><strong>Valor total:</strong> ${total}</div>
       <div class="linha"><strong>Confirmado em:</strong> ${esc(dataConfirmacao)}</div>
 
+      <div style="margin-top:25px;background:#f3f3f3;padding:16px;border-radius:8px;text-align:center;">
+        Código único de autenticidade da compra
+        <strong style="display:block;font-size:22px;margin-top:8px;">${esc(codigo)}</strong>
+      </div>
+
+      <div style="text-align:center;margin:14px 0;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(linkVerificacao)}"
+             alt="QR Code de verificação" style="width:140px;height:140px;">
+        <div style="font-size:12px;margin-top:6px;">Escaneie para verificar a autenticidade</div>
+      </div>
+
+      <div style="text-align:center;margin:14px 0;font-size:14px;">
+        Verifique a autenticidade deste comprovante em:<br>
+        <strong>tapremiado.github.io/verificar.html</strong>
+      </div>
+
       <div class="aviso">
-        Comprovante referente aos números confirmados desta mesma reserva no sistema
+        Este comprovante reúne todos os números confirmados desta mesma compra.
+        A autenticidade deve ser conferida pelo código ou QR Code no sistema
         <strong>Tá Premiado</strong>.
       </div>
 
