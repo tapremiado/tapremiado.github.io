@@ -432,6 +432,16 @@ function gerarComprovanteAgrupado(r){
     : "Não informada";
   const codigo=r.codigo_reserva || "";
   const linkVerificacao="https://tapremiado.github.io/verificar.html?codigo="+encodeURIComponent(codigo);
+  const mensagemCompartilhar=
+    "TÁ PREMIADO\nCOMPROVANTE DE PARTICIPAÇÃO\n\n"+
+    "Participante: "+nome+"\n"+
+    "Número(s): "+numeros.join(", ")+"\n"+
+    "Quantidade: "+quantidade+"\n"+
+    "Valor total: "+total+"\n"+
+    "Status: PAGAMENTO CONFIRMADO\n"+
+    "Código: "+codigo+"\n\n"+
+    "Verifique a autenticidade:\n"+linkVerificacao;
+  const linkCompartilhar="https://wa.me/?text="+encodeURIComponent(mensagemCompartilhar);
 
   if(!codigo){
     alert("Código de autenticidade da compra não disponível. Atualize o painel e tente novamente.");
@@ -455,7 +465,7 @@ function gerarComprovanteAgrupado(r){
       .linha{padding:9px 0;border-bottom:1px solid #ddd;font-size:17px}
       .numeros-comp{text-align:center;font-size:30px;font-weight:bold;margin:20px 0;line-height:1.4}
       .aviso{margin-top:22px;font-size:13px;text-align:center;line-height:1.5}
-      .imprimir,.compartilhar{display:block;width:100%;margin-top:12px;padding:13px;border:0;border-radius:8px;background:#111;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}.compartilhar{background:#198754}.imprimir{margin-top:25px}
+      .imprimir,.compartilhar{display:block;width:100%;margin-top:12px;padding:13px;border:0;border-radius:8px;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}.imprimir{background:#111;margin-top:25px}.compartilhar{background:#198754}
       @media print{body{background:#fff;padding:0}.comprovante{border:0}.imprimir,.compartilhar{display:none}}
     </style>
   </head>
@@ -501,33 +511,8 @@ function gerarComprovanteAgrupado(r){
         <strong>Tá Premiado</strong>.
       </div>
 
-      <button class="compartilhar" onclick="compartilharComprovante()">COMPARTILHAR COMPROVANTE</button>
+      <button class="compartilhar" onclick="window.open('${linkCompartilhar}','_blank')">COMPARTILHAR COMPROVANTE</button>
       <button class="imprimir" onclick="window.print()">IMPRIMIR / SALVAR EM PDF</button>
-
-      <script>
-        async function compartilharComprovante(){
-          const texto = ${repr("TÁ PREMIADO\nCOMPROVANTE DE PARTICIPAÇÃO\n\nParticipante: ")} + ${repr("")};
-          const mensagem =
-            "TÁ PREMIADO\nCOMPROVANTE DE PARTICIPAÇÃO\n\n" +
-            "Participante: ${nome.replace('`','\\`')}\n" +
-            "Número(s): ${numeros.join(", ")}\n" +
-            "Quantidade: ${quantidade}\n" +
-            "Valor total: ${total}\n" +
-            "Status: PAGAMENTO CONFIRMADO\n" +
-            "Código: ${codigo}\n\n" +
-            "Verifique a autenticidade:\n${linkVerificacao}";
-          if(navigator.share){
-            try{
-              await navigator.share({title:"Comprovante Tá Premiado",text:mensagem});
-              return;
-            }catch(e){
-              if(e && e.name==="AbortError") return;
-            }
-          }
-          const link="https://wa.me/?text="+encodeURIComponent(mensagem);
-          window.open(link,"_blank");
-        }
-      <\/script>
     </div>
   </body>
   </html>
@@ -548,6 +533,15 @@ function gerarComprovante(r){
 
   const valor = "R$ 100,00";
   const linkVerificacao = "https://tapremiado.github.io/verificar.html?codigo=" + encodeURIComponent(codigo);
+  const mensagemCompartilhar =
+    "TÁ PREMIADO\nCOMPROVANTE DE PARTICIPAÇÃO\n\n"+
+    "Participante: "+nome+"\n"+
+    "Número: "+numero+"\n"+
+    "Valor: "+valor+"\n"+
+    "Status: PAGAMENTO CONFIRMADO\n"+
+    "Código: "+codigo+"\n\n"+
+    "Verifique a autenticidade:\n"+linkVerificacao;
+  const linkCompartilhar = "https://wa.me/?text="+encodeURIComponent(mensagemCompartilhar);
 
   const w = window.open("", "_blank", "width=800,height=900");
 
@@ -698,34 +692,11 @@ function gerarComprovante(r){
         do sistema <strong>Tá Premiado</strong>.
       </div>
 
-      <button class="compartilhar" onclick="compartilharComprovante()">COMPARTILHAR COMPROVANTE</button>
+      <button class="compartilhar" onclick="window.open('${linkCompartilhar}','_blank')">COMPARTILHAR COMPROVANTE</button>
 
       <button class="imprimir" onclick="window.print()">
         IMPRIMIR / SALVAR EM PDF
       </button>
-
-      <script>
-        async function compartilharComprovante(){
-          const mensagem =
-            "TÁ PREMIADO\nCOMPROVANTE DE PARTICIPAÇÃO\n\n" +
-            "Participante: ${nome.replace('`','\\`')}\n" +
-            "Número: ${numero}\n" +
-            "Valor: ${valor}\n" +
-            "Status: PAGAMENTO CONFIRMADO\n" +
-            "Código: ${codigo}\n\n" +
-            "Verifique a autenticidade:\n${linkVerificacao}";
-          if(navigator.share){
-            try{
-              await navigator.share({title:"Comprovante Tá Premiado",text:mensagem});
-              return;
-            }catch(e){
-              if(e && e.name==="AbortError") return;
-            }
-          }
-          const link="https://wa.me/?text="+encodeURIComponent(mensagem);
-          window.open(link,"_blank");
-        }
-      <\/script>
 
     </div>
   </body>
