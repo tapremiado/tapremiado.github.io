@@ -85,6 +85,7 @@ button{cursor:pointer;font-weight:bold}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
 const {createClient}=supabase;
 const db=createClient(
@@ -420,6 +421,93 @@ async function alterar(numero,acao,qtd){
  msg.textContent=`Operação concluída em ${data} número(s).`;
  await carregar();
 }
+async function compartilharPdfComprovante(dados){
+  const ehCelular=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if(!ehCelular){
+    const telefone=String(dados.whatsapp||"").replace(/\D/g,"");
+    const fone=telefone.startsWith("55")?telefone:"55"+telefone;
+    const mensagem=
+      "Olá, "+dados.nome+"!\n\n"+
+      "Segue seu comprovante de participação no Tá Premiado.\n\n"+
+      "Número(s): "+dados.numeros.join(", ")+"\n"+
+      "Código: "+dados.codigo+"\n\n"+
+      "Verifique a autenticidade:\n"+dados.linkVerificacao;
+    window.open("https://web.whatsapp.com/send?phone="+fone+"&text="+encodeURIComponent(mensagem),"_blank");
+    return;
+  }
+
+  try{
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({unit:"mm",format:"a4"});
+    let y=20;
+
+    pdf.setFont("helvetica","bold");
+    pdf.setFontSize(22);
+    pdf.text("TA PREMIADO",105,y,{align:"center"});
+    y+=9;
+    pdf.setFontSize(13);
+    pdf.text("COMPROVANTE DE PARTICIPACAO",105,y,{align:"center"});
+    y+=13;
+
+    pdf.setFontSize(12);
+    pdf.text("PAGAMENTO CONFIRMADO",105,y,{align:"center"});
+    y+=14;
+
+    pdf.setFont("helvetica","normal");
+    const linhas=[
+      "Participante: "+dados.nome,
+      "CPF: "+dados.cpf,
+      "WhatsApp: "+dados.whatsapp,
+      "Grupo: 001",
+      "Premio: Renault Kwid",
+      "Valor de referencia do premio: R$ 50.000,00",
+      "Numero(s): "+dados.numeros.join(", "),
+      "Quantidade: "+dados.numeros.length+" numero(s)",
+      "Valor total: "+dados.total,
+      "Confirmado em: "+dados.dataConfirmacao,
+      "Codigo de autenticidade: "+dados.codigo
+    ];
+
+    linhas.forEach(l=>{
+      const partes=pdf.splitTextToSize(l,175);
+      pdf.text(partes,18,y);
+      y+=7*partes.length;
+    });
+
+    y+=5;
+    pdf.setFontSize(10);
+    pdf.text("Verifique a autenticidade:",18,y);
+    y+=6;
+    const linkPartes=pdf.splitTextToSize(dados.linkVerificacao,175);
+    pdf.text(linkPartes,18,y);
+
+    const blob=pdf.output("blob");
+    const nomeArquivo="Comprovante-Ta-Premiado-"+dados.numeros.join("-")+".pdf";
+    const arquivo=new File([blob],nomeArquivo,{type:"application/pdf"});
+
+    if(navigator.canShare && navigator.canShare({files:[arquivo]}) && navigator.share){
+      await navigator.share({
+        title:"Comprovante Tá Premiado",
+        text:"Segue o comprovante de participação no Tá Premiado.",
+        files:[arquivo]
+      });
+    }else{
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url;
+      a.download=nomeArquivo;
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),2000);
+      alert("O navegador não permitiu compartilhar o PDF diretamente. O comprovante foi baixado.");
+    }
+  }catch(e){
+    if(e && e.name==="AbortError") return;
+    console.error(e);
+    alert("Não foi possível compartilhar o PDF neste aparelho.");
+  }
+}
+
 function gerarComprovanteAgrupado(r){
   const nome=r.nome || "";
   const whatsapp=r.telefone || r.whatsapp || "";
@@ -432,16 +520,9 @@ function gerarComprovanteAgrupado(r){
     : "Não informada";
   const codigo=r.codigo_reserva || "";
   const linkVerificacao="https://tapremiado.github.io/verificar.html?codigo="+encodeURIComponent(codigo);
-  const mensagemCompartilhar=
-    "TÁ PREMIADO\nCOMPROVANTE DE PARTICIPAÇÃO\n\n"+
-    "Participante: "+nome+"\n"+
-    "Número(s): "+numeros.join(", ")+"\n"+
-    "Quantidade: "+quantidade+"\n"+
-    "Valor total: "+total+"\n"+
-    "Status: PAGAMENTO CONFIRMADO\n"+
-    "Código: "+codigo+"\n\n"+
-    "Verifique a autenticidade:\n"+linkVerificacao;
-  const linkCompartilhar="https://wa.me/?text="+encodeURIComponent(mensagemCompartilhar);
+  const dadosCompartilhar={
+    nome,whatsapp,cpf,numeros,total,dataConfirmacao,codigo,linkVerificacao
+  };
 
   if(!codigo){
     alert("Código de autenticidade da compra não disponível. Atualize o painel e tente novamente.");
@@ -511,7 +592,7 @@ function gerarComprovanteAgrupado(r){
         <strong>Tá Premiado</strong>.
       </div>
 
-      <button class="compartilhar" onclick="window.open('${linkCompartilhar}','_blank')">COMPARTILHAR COMPROVANTE</button>
+      <button class="compartilhar" onclick="window.opener.compartilharPdfComprovante(window.dadosCompartilhar)">COMPARTILHAR COMPROVANTE</button>
       <button class="imprimir" onclick="window.print()">IMPRIMIR / SALVAR EM PDF</button>
     </div>
   </body>
@@ -519,6 +600,7 @@ function gerarComprovanteAgrupado(r){
   `);
 
   w.document.close();
+  w.dadosCompartilhar=dadosCompartilhar;
 }
 
 function gerarComprovante(r){
@@ -533,15 +615,6 @@ function gerarComprovante(r){
 
   const valor = "R$ 100,00";
   const linkVerificacao = "https://tapremiado.github.io/verificar.html?codigo=" + encodeURIComponent(codigo);
-  const mensagemCompartilhar =
-    "TÁ PREMIADO\nCOMPROVANTE DE PARTICIPAÇÃO\n\n"+
-    "Participante: "+nome+"\n"+
-    "Número: "+numero+"\n"+
-    "Valor: "+valor+"\n"+
-    "Status: PAGAMENTO CONFIRMADO\n"+
-    "Código: "+codigo+"\n\n"+
-    "Verifique a autenticidade:\n"+linkVerificacao;
-  const linkCompartilhar = "https://wa.me/?text="+encodeURIComponent(mensagemCompartilhar);
 
   const w = window.open("", "_blank", "width=800,height=900");
 
@@ -614,19 +687,6 @@ function gerarComprovante(r){
         text-align:center;
         line-height:1.5;
       }
-      .compartilhar{
-        display:block;
-        width:100%;
-        margin-top:12px;
-        padding:13px;
-        border:0;
-        border-radius:8px;
-        background:#198754;
-        color:#fff;
-        font-size:16px;
-        font-weight:bold;
-        cursor:pointer;
-      }
       .imprimir{
         display:block;
         width:100%;
@@ -643,7 +703,7 @@ function gerarComprovante(r){
       @media print{
         body{background:#fff;padding:0}
         .comprovante{border:0}
-        .imprimir,.compartilhar{display:none}
+        .imprimir{display:none}
       }
     </style>
   </head>
@@ -691,8 +751,6 @@ function gerarComprovante(r){
         os dados e o código acima coincidirem com o registro oficial
         do sistema <strong>Tá Premiado</strong>.
       </div>
-
-      <button class="compartilhar" onclick="window.open('${linkCompartilhar}','_blank')">COMPARTILHAR COMPROVANTE</button>
 
       <button class="imprimir" onclick="window.print()">
         IMPRIMIR / SALVAR EM PDF
