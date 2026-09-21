@@ -389,6 +389,7 @@ async function compartilharComprovanteDireto(r){
   const linkVerificacao="https://tapremiado.github.io/verificar.html?codigo="+encodeURIComponent(codigo);
   const ehCelular=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
+  // No computador mantém exatamente o fluxo aprovado pelo WhatsApp Web.
   if(!ehCelular){
     const telefone=String(whatsapp).replace(/\D/g,"");
     const fone=telefone.startsWith("55")?telefone:"55"+telefone;
@@ -410,45 +411,115 @@ async function compartilharComprovanteDireto(r){
 
     const {jsPDF}=window.jspdf;
     const pdf=new jsPDF({unit:"mm",format:"a4"});
-    let y=20;
+    const pageW=210;
+    const left=18;
+    const right=192;
+    const center=105;
 
+    // Moldura do comprovante
+    pdf.setDrawColor(25);
+    pdf.setLineWidth(0.6);
+    pdf.roundedRect(12,10,186,277,4,4);
+
+    pdf.setTextColor(25);
     pdf.setFont("helvetica","bold");
-    pdf.setFontSize(22);
-    pdf.text("TA PREMIADO",105,y,{align:"center"});
-    y+=9;
-    pdf.setFontSize(13);
-    pdf.text("COMPROVANTE DE PARTICIPACAO",105,y,{align:"center"});
-    y+=13;
+    pdf.setFontSize(24);
+    pdf.text("TA PREMIADO",center,23,{align:"center"});
     pdf.setFontSize(12);
-    pdf.text("PAGAMENTO CONFIRMADO",105,y,{align:"center"});
-    y+=14;
+    pdf.text("COMPROVANTE DE PARTICIPACAO",center,31,{align:"center"});
+
+    // Faixa de pagamento confirmado
+    pdf.setFillColor(25,135,84);
+    pdf.roundedRect(18,38,174,12,2,2,"F");
+    pdf.setTextColor(255);
+    pdf.setFontSize(12);
+    pdf.text("PAGAMENTO CONFIRMADO",center,46,{align:"center"});
+
+    pdf.setTextColor(30);
+    pdf.setFont("helvetica","normal");
+    pdf.setFontSize(10.5);
+
+    let y=59;
+    const linha=(rotulo,valor)=>{
+      pdf.setFont("helvetica","bold");
+      pdf.text(rotulo,left,y);
+      pdf.setFont("helvetica","normal");
+      const x=left+pdf.getTextWidth(rotulo)+2;
+      const partes=pdf.splitTextToSize(String(valor), right-x);
+      pdf.text(partes,x,y);
+      y+=Math.max(8,partes.length*5.5+2);
+      pdf.setDrawColor(220);
+      pdf.line(left,y-3,right,y-3);
+    };
+
+    linha("Participante:",nome);
+    linha("CPF:",cpf);
+    linha("WhatsApp:",whatsapp);
+    linha("Grupo:","001");
+    linha("Premio:","Renault Kwid");
+    linha("Valor de referencia do premio:","R$ 50.000,00");
+
+    y+=4;
+    pdf.setFont("helvetica","bold");
+    pdf.setFontSize(17);
+    const nums=pdf.splitTextToSize("NUMEROS "+numeros.join(", "),165);
+    pdf.text(nums,center,y,{align:"center"});
+    y+=nums.length*8+5;
+
+    pdf.setFontSize(10.5);
+    linha("Quantidade:",quantidade+" numero(s)");
+    linha("Valor total:",total);
+    linha("Confirmado em:",dataConfirmacao);
+
+    // Caixa do código
+    y+=4;
+    pdf.setFillColor(243,243,243);
+    pdf.roundedRect(30,y,150,24,2,2,"F");
+    pdf.setFont("helvetica","normal");
+    pdf.setFontSize(9.5);
+    pdf.text("Codigo unico de autenticidade da compra",center,y+8,{align:"center"});
+    pdf.setFont("helvetica","bold");
+    pdf.setFontSize(15);
+    pdf.text(codigo,center,y+17,{align:"center"});
+    y+=31;
+
+    // QR Code igual à finalidade do comprovante original.
+    try{
+      const qrUrl="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data="+encodeURIComponent(linkVerificacao);
+      const resp=await fetch(qrUrl);
+      if(resp.ok){
+        const qrBlob=await resp.blob();
+        const qrData=await new Promise((resolve,reject)=>{
+          const fr=new FileReader();
+          fr.onload=()=>resolve(fr.result);
+          fr.onerror=reject;
+          fr.readAsDataURL(qrBlob);
+        });
+        pdf.addImage(qrData,"PNG",80,y,50,50);
+        y+=54;
+        pdf.setFont("helvetica","normal");
+        pdf.setFontSize(8.5);
+        pdf.text("Escaneie para verificar a autenticidade",center,y,{align:"center"});
+        y+=8;
+      }
+    }catch(qrErro){
+      console.warn("QR não carregado:",qrErro);
+    }
+
+    pdf.setFontSize(9);
+    pdf.text("Verifique a autenticidade deste comprovante em:",center,y,{align:"center"});
+    y+=5;
+    pdf.setFont("helvetica","bold");
+    pdf.text("tapremiado.github.io/verificar.html",center,y,{align:"center"});
+    y+=9;
 
     pdf.setFont("helvetica","normal");
-    const linhas=[
-      "Participante: "+nome,
-      "CPF: "+cpf,
-      "WhatsApp: "+whatsapp,
-      "Grupo: 001",
-      "Premio: Renault Kwid",
-      "Valor de referencia do premio: R$ 50.000,00",
-      "Numero(s): "+numeros.join(", "),
-      "Quantidade: "+quantidade+" numero(s)",
-      "Valor total: "+total,
-      "Confirmado em: "+dataConfirmacao,
-      "Codigo de autenticidade: "+codigo
-    ];
-
-    linhas.forEach(l=>{
-      const partes=pdf.splitTextToSize(l,175);
-      pdf.text(partes,18,y);
-      y+=7*partes.length;
-    });
-
-    y+=5;
-    pdf.setFontSize(10);
-    pdf.text("Verifique a autenticidade:",18,y);
-    y+=6;
-    pdf.text(pdf.splitTextToSize(linkVerificacao,175),18,y);
+    pdf.setFontSize(8.2);
+    const aviso=pdf.splitTextToSize(
+      "Este comprovante reune todos os numeros confirmados desta mesma compra. A autenticidade deve ser conferida pelo codigo ou QR Code no sistema Ta Premiado.",
+      160
+    );
+    pdf.text(aviso,center,y,{align:"center"});
 
     const blob=pdf.output("blob");
     const arquivo=new File(
@@ -460,7 +531,7 @@ async function compartilharComprovanteDireto(r){
     if(navigator.share && navigator.canShare && navigator.canShare({files:[arquivo]})){
       await navigator.share({
         title:"Comprovante Tá Premiado",
-        text:"Segue seu comprovante de participação no Tá Premiado.",
+        text:"Segue seu comprovante de participação no Tá Premiado.\n\nPara verificar a autenticidade do comprovante, acesse:\n"+linkVerificacao,
         files:[arquivo]
       });
     }else{
