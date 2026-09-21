@@ -531,7 +531,12 @@ async function compartilharComprovanteDireto(r){
     if(navigator.share && navigator.canShare && navigator.canShare({files:[arquivo]})){
       await navigator.share({
         title:"Comprovante Tá Premiado",
-        text:"Segue seu comprovante de participação no Tá Premiado.\n\nPara verificar a autenticidade do comprovante, acesse:\n"+linkVerificacao,
+        text:
+          "Olá, "+nome+"!\n\n"+
+          "Segue seu comprovante de participação no Tá Premiado.\n\n"+
+          "Número(s): "+numeros.join(", ")+"\n"+
+          "Código: "+codigo+"\n\n"+
+          "Verifique a autenticidade:\n"+linkVerificacao,
         files:[arquivo]
       });
     }else{
