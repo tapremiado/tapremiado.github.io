@@ -27,7 +27,8 @@ button{cursor:pointer;font-weight:bold}
 .confirmar{background:#198754;color:#fff;border:0}
 .liberar{background:#dc3545;color:#fff;border:0}
 .pix{background:#2563eb;color:#fff;border:0}
-.compartilhar{background:#198754;color:#fff;border:0}
+.compartilhar{background:#2563eb;color:#fff;border:0}
+.enviar-whatsapp{background:#198754;color:#fff;border:0}
 .msg{text-align:center;font-weight:bold;margin:12px 0}
 .vazio{text-align:center;padding:25px;background:#fff;border-radius:12px}
 @media(max-width:650px){.contadores{grid-template-columns:1fr}.acoes{flex-direction:column}}
@@ -353,7 +354,8 @@ async function carregarConfirmadosSeparado(){
         </div>
         <div class="acoes">
           <button class="comprovante">GERAR COMPROVANTE</button>
-          ${r.reserva_id ? `<button class="compartilhar">COMPARTILHAR COMPROVANTE</button>` : ""}
+          ${r.reserva_id ? `<button class="enviar-whatsapp">ENVIAR PELO WHATSAPP</button>` : ""}
+          ${r.reserva_id ? `<button class="compartilhar">COMPARTILHAR PDF</button>` : ""}
           ${r.reserva_id ? `<button class="liberar">LIBERAR TODOS (${quantidade})</button>` : ""}
         </div>`;
 
@@ -361,6 +363,11 @@ async function carregarConfirmadosSeparado(){
         if(r.reserva_id) gerarComprovanteAgrupado(r);
         else gerarComprovante(r);
       };
+
+      const btnEnviarWhatsApp=div.querySelector(".enviar-whatsapp");
+      if(btnEnviarWhatsApp){
+        btnEnviarWhatsApp.onclick=()=>enviarComprovanteWhatsApp(r);
+      }
 
       const btnCompartilhar=div.querySelector(".compartilhar");
       if(btnCompartilhar){
@@ -375,6 +382,31 @@ async function carregarConfirmadosSeparado(){
       confirmadosBox.appendChild(div);
     });
 }
+function enviarComprovanteWhatsApp(r){
+  const nome=r.nome || "";
+  const whatsapp=r.telefone || r.whatsapp || "";
+  const numeros=Array.isArray(r.numeros)?r.numeros:[r.numero];
+  const codigo=r.codigo_reserva || "";
+  const linkVerificacao="https://tapremiado.github.io/verificar.html?codigo="+encodeURIComponent(codigo);
+
+  const telefone=String(whatsapp).replace(/\D/g,"");
+  const fone=telefone.startsWith("55")?telefone:"55"+telefone;
+
+  const mensagem=
+    "Olá, "+nome+"!\n\n"+
+    "Segue seu comprovante de participação no Tá Premiado.\n\n"+
+    "Número(s): "+numeros.join(", ")+"\n"+
+    "Código: "+codigo+"\n\n"+
+    "Verifique a autenticidade:\n"+linkVerificacao;
+
+  const ehCelular=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const link=ehCelular
+    ? "https://wa.me/"+fone+"?text="+encodeURIComponent(mensagem)
+    : "https://web.whatsapp.com/send?phone="+fone+"&text="+encodeURIComponent(mensagem);
+
+  window.open(link,"_blank");
+}
+
 async function compartilharComprovanteDireto(r){
   const nome=r.nome || "";
   const whatsapp=r.telefone || r.whatsapp || "";
@@ -531,12 +563,6 @@ async function compartilharComprovanteDireto(r){
     if(navigator.share && navigator.canShare && navigator.canShare({files:[arquivo]})){
       await navigator.share({
         title:"Comprovante Tá Premiado",
-        text:
-          "Olá, "+nome+"!\n\n"+
-          "Segue seu comprovante de participação no Tá Premiado.\n\n"+
-          "Número(s): "+numeros.join(", ")+"\n"+
-          "Código: "+codigo+"\n\n"+
-          "Verifique a autenticidade:\n"+linkVerificacao,
         files:[arquivo]
       });
     }else{
