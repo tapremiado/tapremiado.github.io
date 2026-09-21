@@ -27,6 +27,7 @@ button{cursor:pointer;font-weight:bold}
 .confirmar{background:#198754;color:#fff;border:0}
 .liberar{background:#dc3545;color:#fff;border:0}
 .pix{background:#2563eb;color:#fff;border:0}
+.compartilhar{background:#198754;color:#fff;border:0}
 .msg{text-align:center;font-weight:bold;margin:12px 0}
 .vazio{text-align:center;padding:25px;background:#fff;border-radius:12px}
 @media(max-width:650px){.contadores{grid-template-columns:1fr}.acoes{flex-direction:column}}
@@ -352,6 +353,7 @@ async function carregarConfirmadosSeparado(){
         </div>
         <div class="acoes">
           <button class="comprovante">GERAR COMPROVANTE</button>
+          ${r.reserva_id ? `<button class="compartilhar">COMPARTILHAR COMPROVANTE</button>` : ""}
           ${r.reserva_id ? `<button class="liberar">LIBERAR TODOS (${quantidade})</button>` : ""}
         </div>`;
 
@@ -359,6 +361,11 @@ async function carregarConfirmadosSeparado(){
         if(r.reserva_id) gerarComprovanteAgrupado(r);
         else gerarComprovante(r);
       };
+
+      const btnCompartilhar=div.querySelector(".compartilhar");
+      if(btnCompartilhar){
+        btnCompartilhar.onclick=()=>compartilharComprovanteDireto(r);
+      }
 
       const btnLiberarTodos=div.querySelector(".liberar");
       if(btnLiberarTodos){
@@ -368,6 +375,112 @@ async function carregarConfirmadosSeparado(){
       confirmadosBox.appendChild(div);
     });
 }
+async function compartilharComprovanteDireto(r){
+  const nome=r.nome || "";
+  const whatsapp=r.telefone || r.whatsapp || "";
+  const cpf=r.cpf || "";
+  const numeros=Array.isArray(r.numeros)?r.numeros:[r.numero];
+  const quantidade=numeros.length;
+  const total="R$ "+(quantidade*100).toFixed(2).replace(".",",");
+  const dataConfirmacao=r.confirmado_em
+    ? new Date(r.confirmado_em).toLocaleString("pt-BR")
+    : "Não informada";
+  const codigo=r.codigo_reserva || "";
+  const linkVerificacao="https://tapremiado.github.io/verificar.html?codigo="+encodeURIComponent(codigo);
+  const ehCelular=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if(!ehCelular){
+    const telefone=String(whatsapp).replace(/\D/g,"");
+    const fone=telefone.startsWith("55")?telefone:"55"+telefone;
+    const mensagem=
+      "Olá, "+nome+"!\n\n"+
+      "Segue seu comprovante de participação no Tá Premiado.\n\n"+
+      "Número(s): "+numeros.join(", ")+"\n"+
+      "Código: "+codigo+"\n\n"+
+      "Verifique a autenticidade:\n"+linkVerificacao;
+    window.open("https://web.whatsapp.com/send?phone="+fone+"&text="+encodeURIComponent(mensagem),"_blank");
+    return;
+  }
+
+  try{
+    if(!window.jspdf || !window.jspdf.jsPDF){
+      alert("Aguarde alguns segundos e tente novamente.");
+      return;
+    }
+
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({unit:"mm",format:"a4"});
+    let y=20;
+
+    pdf.setFont("helvetica","bold");
+    pdf.setFontSize(22);
+    pdf.text("TA PREMIADO",105,y,{align:"center"});
+    y+=9;
+    pdf.setFontSize(13);
+    pdf.text("COMPROVANTE DE PARTICIPACAO",105,y,{align:"center"});
+    y+=13;
+    pdf.setFontSize(12);
+    pdf.text("PAGAMENTO CONFIRMADO",105,y,{align:"center"});
+    y+=14;
+
+    pdf.setFont("helvetica","normal");
+    const linhas=[
+      "Participante: "+nome,
+      "CPF: "+cpf,
+      "WhatsApp: "+whatsapp,
+      "Grupo: 001",
+      "Premio: Renault Kwid",
+      "Valor de referencia do premio: R$ 50.000,00",
+      "Numero(s): "+numeros.join(", "),
+      "Quantidade: "+quantidade+" numero(s)",
+      "Valor total: "+total,
+      "Confirmado em: "+dataConfirmacao,
+      "Codigo de autenticidade: "+codigo
+    ];
+
+    linhas.forEach(l=>{
+      const partes=pdf.splitTextToSize(l,175);
+      pdf.text(partes,18,y);
+      y+=7*partes.length;
+    });
+
+    y+=5;
+    pdf.setFontSize(10);
+    pdf.text("Verifique a autenticidade:",18,y);
+    y+=6;
+    pdf.text(pdf.splitTextToSize(linkVerificacao,175),18,y);
+
+    const blob=pdf.output("blob");
+    const arquivo=new File(
+      [blob],
+      "Comprovante-Ta-Premiado-"+numeros.join("-")+".pdf",
+      {type:"application/pdf"}
+    );
+
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[arquivo]})){
+      await navigator.share({
+        title:"Comprovante Tá Premiado",
+        text:"Segue seu comprovante de participação no Tá Premiado.",
+        files:[arquivo]
+      });
+    }else{
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url;
+      a.download=arquivo.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),2000);
+      alert("Este navegador não permite compartilhar PDF diretamente. O PDF foi salvo no aparelho.");
+    }
+  }catch(e){
+    if(e && e.name==="AbortError") return;
+    console.error("Erro ao compartilhar:",e);
+    alert("Não foi possível compartilhar o comprovante neste aparelho.");
+  }
+}
+
 async function liberarReservaConfirmada(reservaId,qtd){
   if(!confirm(`Liberar TODOS os ${qtd} número(s) desta compra confirmada? Eles voltarão a ficar disponíveis e os dados desta confirmação serão apagados.`)) return;
 
@@ -421,93 +534,6 @@ async function alterar(numero,acao,qtd){
  msg.textContent=`Operação concluída em ${data} número(s).`;
  await carregar();
 }
-async function compartilharPdfComprovante(dados){
-  const ehCelular=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-  if(!ehCelular){
-    const telefone=String(dados.whatsapp||"").replace(/\D/g,"");
-    const fone=telefone.startsWith("55")?telefone:"55"+telefone;
-    const mensagem=
-      "Olá, "+dados.nome+"!\n\n"+
-      "Segue seu comprovante de participação no Tá Premiado.\n\n"+
-      "Número(s): "+dados.numeros.join(", ")+"\n"+
-      "Código: "+dados.codigo+"\n\n"+
-      "Verifique a autenticidade:\n"+dados.linkVerificacao;
-    window.open("https://web.whatsapp.com/send?phone="+fone+"&text="+encodeURIComponent(mensagem),"_blank");
-    return;
-  }
-
-  try{
-    const {jsPDF}=window.jspdf;
-    const pdf=new jsPDF({unit:"mm",format:"a4"});
-    let y=20;
-
-    pdf.setFont("helvetica","bold");
-    pdf.setFontSize(22);
-    pdf.text("TA PREMIADO",105,y,{align:"center"});
-    y+=9;
-    pdf.setFontSize(13);
-    pdf.text("COMPROVANTE DE PARTICIPACAO",105,y,{align:"center"});
-    y+=13;
-
-    pdf.setFontSize(12);
-    pdf.text("PAGAMENTO CONFIRMADO",105,y,{align:"center"});
-    y+=14;
-
-    pdf.setFont("helvetica","normal");
-    const linhas=[
-      "Participante: "+dados.nome,
-      "CPF: "+dados.cpf,
-      "WhatsApp: "+dados.whatsapp,
-      "Grupo: 001",
-      "Premio: Renault Kwid",
-      "Valor de referencia do premio: R$ 50.000,00",
-      "Numero(s): "+dados.numeros.join(", "),
-      "Quantidade: "+dados.numeros.length+" numero(s)",
-      "Valor total: "+dados.total,
-      "Confirmado em: "+dados.dataConfirmacao,
-      "Codigo de autenticidade: "+dados.codigo
-    ];
-
-    linhas.forEach(l=>{
-      const partes=pdf.splitTextToSize(l,175);
-      pdf.text(partes,18,y);
-      y+=7*partes.length;
-    });
-
-    y+=5;
-    pdf.setFontSize(10);
-    pdf.text("Verifique a autenticidade:",18,y);
-    y+=6;
-    const linkPartes=pdf.splitTextToSize(dados.linkVerificacao,175);
-    pdf.text(linkPartes,18,y);
-
-    const blob=pdf.output("blob");
-    const nomeArquivo="Comprovante-Ta-Premiado-"+dados.numeros.join("-")+".pdf";
-    const arquivo=new File([blob],nomeArquivo,{type:"application/pdf"});
-
-    if(navigator.canShare && navigator.canShare({files:[arquivo]}) && navigator.share){
-      await navigator.share({
-        title:"Comprovante Tá Premiado",
-        text:"Segue o comprovante de participação no Tá Premiado.",
-        files:[arquivo]
-      });
-    }else{
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement("a");
-      a.href=url;
-      a.download=nomeArquivo;
-      a.click();
-      setTimeout(()=>URL.revokeObjectURL(url),2000);
-      alert("O navegador não permitiu compartilhar o PDF diretamente. O comprovante foi baixado.");
-    }
-  }catch(e){
-    if(e && e.name==="AbortError") return;
-    console.error(e);
-    alert("Não foi possível compartilhar o PDF neste aparelho.");
-  }
-}
-
 function gerarComprovanteAgrupado(r){
   const nome=r.nome || "";
   const whatsapp=r.telefone || r.whatsapp || "";
@@ -520,9 +546,6 @@ function gerarComprovanteAgrupado(r){
     : "Não informada";
   const codigo=r.codigo_reserva || "";
   const linkVerificacao="https://tapremiado.github.io/verificar.html?codigo="+encodeURIComponent(codigo);
-  const dadosCompartilhar={
-    nome,whatsapp,cpf,numeros,total,dataConfirmacao,codigo,linkVerificacao
-  };
 
   if(!codigo){
     alert("Código de autenticidade da compra não disponível. Atualize o painel e tente novamente.");
@@ -546,8 +569,8 @@ function gerarComprovanteAgrupado(r){
       .linha{padding:9px 0;border-bottom:1px solid #ddd;font-size:17px}
       .numeros-comp{text-align:center;font-size:30px;font-weight:bold;margin:20px 0;line-height:1.4}
       .aviso{margin-top:22px;font-size:13px;text-align:center;line-height:1.5}
-      .imprimir,.compartilhar{display:block;width:100%;margin-top:12px;padding:13px;border:0;border-radius:8px;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}.imprimir{background:#111;margin-top:25px}.compartilhar{background:#198754}
-      @media print{body{background:#fff;padding:0}.comprovante{border:0}.imprimir,.compartilhar{display:none}}
+      .imprimir{display:block;width:100%;margin-top:25px;padding:13px;border:0;border-radius:8px;background:#111;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}
+      @media print{body{background:#fff;padding:0}.comprovante{border:0}.imprimir{display:none}}
     </style>
   </head>
   <body>
@@ -592,7 +615,6 @@ function gerarComprovanteAgrupado(r){
         <strong>Tá Premiado</strong>.
       </div>
 
-      <button class="compartilhar" onclick="window.opener.compartilharPdfComprovante(window.dadosCompartilhar)">COMPARTILHAR COMPROVANTE</button>
       <button class="imprimir" onclick="window.print()">IMPRIMIR / SALVAR EM PDF</button>
     </div>
   </body>
@@ -600,7 +622,6 @@ function gerarComprovanteAgrupado(r){
   `);
 
   w.document.close();
-  w.dadosCompartilhar=dadosCompartilhar;
 }
 
 function gerarComprovante(r){
