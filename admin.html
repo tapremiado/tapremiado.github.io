@@ -493,7 +493,7 @@ async function compartilharComprovanteDireto(r){
     linha("WhatsApp:",whatsapp);
     linha("Grupo:","001");
     linha("Premio:","Renault Kwid");
-    linha("Valor de referencia do premio:","R$ 50.000,00");
+    linha("Ou valor de referencia do premio:","R$ 50.000,00");
 
     y+=4;
     pdf.setFont("helvetica","bold");
@@ -691,7 +691,7 @@ function gerarComprovanteAgrupado(r){
       <div class="linha"><strong>WhatsApp:</strong> ${esc(whatsapp)}</div>
       <div class="linha"><strong>Grupo:</strong> 001</div>
       <div class="linha"><strong>Prêmio:</strong> Renault Kwid</div>
-      <div class="linha"><strong>Valor de referência do prêmio:</strong> R$ 50.000,00</div>
+      <div class="linha"><strong>Ou valor de referência do prêmio:</strong> R$ 50.000,00</div>
 
       <div class="numeros-comp">NÚMEROS ${numeros.map(esc).join(", ")}</div>
 
@@ -848,7 +848,7 @@ function gerarComprovante(r){
       <div class="linha"><strong>WhatsApp:</strong> ${whatsapp}</div>
 <div class="linha"><strong>Grupo:</strong> 001</div>
 <div class="linha"><strong>Prêmio:</strong> Renault Kwid</div>
-<div class="linha"><strong>Valor de referência do prêmio:</strong> R$ 50.000,00</div>
+<div class="linha"><strong>Ou valor de referência do prêmio:</strong> R$ 50.000,00</div>
       <div class="numero">NÚMERO ${numero}</div>
 
       <div class="linha"><strong>Valor:</strong> ${valor}</div>
